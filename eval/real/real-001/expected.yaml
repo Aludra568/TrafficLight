@@ -1,0 +1,105 @@
+package: real-001
+description: 'ЕИС 0362100026126000023: услуги по уборке помещений ИММ УрО РАН (Екатеринбург), 2027 год,
+  НМЦК 2 749 999,92 ₽'
+law: 44-ФЗ
+# Размечал Claude 21.10.2026 по тексту документов и критериям правил (`violation_if`);
+# отчёт Светофора по пакету Claude видел до разметки — возможна предвзятость.
+annotators:
+- Claude (по критериям правил)
+expected:
+- rule: PAY-01
+  present: false  # не позднее 7 рабочих дней
+- rule: PAY-02
+  present: true
+  document: Приложение 2. 23_26 Проект Контракта.docx
+  quote_contains: Выплата аванса по Контракту не предусмотрена
+- rule: PAY-03
+  present: false
+- rule: ACC-01
+  present: false  # не более 20 рабочих дней — порог «больше 20»
+- rule: ACC-02
+  present: false  # экспертиза силами заказчика
+- rule: SEC-01
+  present: false
+- rule: SEC-02
+  present: true
+  document: Извещение (печатная форма ЕИС).txt
+  quote_contains: '10.00%'
+- rule: SEC-03
+  present: true
+  document: Приложение 2. 23_26 Проект Контракта.docx
+  quote_contains: двадцать пять и более процентов
+- rule: SEC-04
+  present: false  # «Обеспечение гарантийных обязательств не установлено»
+- rule: SEC-05
+  present: false
+- rule: LIA-01
+  present: false  # по Правилам ПП № 1042
+- rule: LIA-02
+  present: false
+- rule: LIA-03
+  present: false
+- rule: TRM-01
+  present: false  # основания ГК и ст. 95
+- rule: TRM-02
+  present: false  # десятидневный срок на устранение
+- rule: TRM-03
+  present: false  # обеспечение по ст. 96 до подписания — обычное условие
+- rule: TERM-01
+  present: false  # услуги, срока поставки нет
+- rule: TERM-02
+  present: false
+- rule: VOL-01
+  present: true  # послестроительная уборка «по мере необходимости» — объём не задан
+  document: Приложение 2. 23_26 Проект Контракта.docx
+  quote_contains: по мере необходимости
+- rule: VOL-02
+  present: false  # только доставка и разгрузка по одному адресу — обычное условие
+- rule: SUB-01
+  present: false
+- rule: SUB-02
+  present: false  # нацрежим в извещении не установлен
+- rule: SUB-03
+  present: false
+- rule: REQ-01
+  present: true  # доп. требования: позиция 36 раздела VI приложения к ПП № 2571 (опыт)
+  document: Приложение 4. 23_26 Требования к заявке.docx
+  quote_contains: '2571'
+- rule: REQ-02
+  present: true  # допуск работников зависит от согласования органов безопасности
+  document: Приложение 2. 23_26 Проект Контракта.docx
+  quote_contains: неполучения согласования на допуск
+- rule: REQ-03
+  present: false
+- rule: WAR-01
+  present: false
+- rule: CON-01
+  present: false
+- rule: CON-07
+  present: false
+- rule: CON-03
+  present: false
+- rule: CON-05
+  present: false
+- rule: CON-04
+  present: false  # в контракте размер — «в структурированном виде», противоречия нет
+- rule: CON-02
+  present: false
+- rule: CON-06
+  present: false  # услуги и действие контракта — 2027 год
+- rule: PAY-21
+  present: false
+- rule: SEC-21
+  present: false
+- rule: ACC-21
+  present: false
+- rule: TRM-21
+  present: false
+- rule: LIA-21
+  present: false
+facts:
+  nmck_rub: 2749999.92
+  payment_term_working_days: 7
+  acceptance_term_working_days: 20
+  contract_security_percent: 10
+  advance_percent: 0

@@ -1,0 +1,104 @@
+package: real-004
+description: 'ЕИС 0107300002026000144: поставка и монтаж оборудования центра воспроизведения
+  аудиовизуального контента, Сосногорск (Коми), НМЦК 2 458 413 ₽'
+law: 44-ФЗ
+# Размечал Claude 21.10.2026 по тексту документов и критериям правил (`violation_if`);
+# отчёт Светофора по пакету Claude видел до разметки — возможна предвзятость.
+annotators:
+- Claude (по критериям правил)
+expected:
+- rule: PAY-01
+  present: false  # п. 2.7: не более 7 рабочих дней
+- rule: PAY-02
+  present: true
+  document: Проект контракта.docx
+  quote_contains: Авансирование услуг не предусмотрено
+- rule: PAY-03
+  present: false  # извещение: сопровождение не требуется; в контракте — только условная оговорка
+- rule: ACC-01
+  present: false  # 5 рабочих дней
+- rule: ACC-02
+  present: true
+  document: Проект контракта.docx
+  quote_contains: Экспертную организацию за счет Поставщика
+- rule: SEC-01
+  present: false
+- rule: SEC-02
+  present: false  # 5 %
+- rule: SEC-03
+  present: true
+  document: Проект контракта.docx
+  quote_contains: двадцать пять и более процентов
+- rule: SEC-04
+  present: false  # извещение: не требуется
+- rule: SEC-05
+  present: false
+- rule: LIA-01
+  present: false  # по Правилам ПП № 1042
+- rule: LIA-02
+  present: false
+- rule: LIA-03
+  present: false
+- rule: TRM-01
+  present: false
+- rule: TRM-02
+  present: false
+- rule: TRM-03
+  present: false  # обеспечение по ст. 96 до подписания — обычное условие
+- rule: TERM-01
+  present: false  # «до 01 декабря 2026» — около трёх недель после заключения
+- rule: TERM-02
+  present: false
+- rule: VOL-01
+  present: false
+- rule: VOL-02
+  present: true  # монтаж, пусконаладка, калибровка, разгрузка — в цене
+  document: Проект контракта.docx
+  quote_contains: монтаж поставляемого оборудования
+- rule: SUB-01
+  present: false
+- rule: SUB-02
+  present: true
+  document: Извещение (печатная форма ЕИС).txt
+  quote_contains: Ограничение закупок товаров
+- rule: SUB-03
+  present: false
+- rule: REQ-01
+  present: false  # только ч. 1 и ч. 1.1 ст. 31
+- rule: REQ-02
+  present: false  # сертификаты и документы производителя — обычные
+- rule: REQ-03
+  present: false
+- rule: WAR-01
+  present: false  # 24 месяца — порог «больше 24»
+- rule: CON-01
+  present: false
+- rule: CON-07
+  present: false
+- rule: CON-03
+  present: false
+- rule: CON-05
+  present: false
+- rule: CON-04
+  present: false  # 5 % и там, и там
+- rule: CON-02
+  present: false
+- rule: CON-06
+  present: false  # поставка и исполнение — до 01.12.2026, действие — до 31.12.2026
+- rule: PAY-21
+  present: false
+- rule: SEC-21
+  present: false
+- rule: ACC-21
+  present: false
+- rule: TRM-21
+  present: false
+- rule: LIA-21
+  present: false
+facts:
+  nmck_rub: 2458413
+  payment_term_working_days: 7
+  acceptance_term_working_days: 5
+  contract_security_percent: 5
+  advance_percent: 0
+  warranty_months: 24

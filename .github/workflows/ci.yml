@@ -1,0 +1,108 @@
+# CI: линтеры и тесты бэкенда и фронтенда, затем сборка всего приложения одной командой
+# (`docker compose up --build`) и демо-сценарий на запущенном стеке. Ключ модели не нужен:
+# тесты идут с записанными ответами модели, демо проверяет детерминированную часть.
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Бэкенд — ruff, mypy, pytest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: svetofor
+          POSTGRES_PASSWORD: svetofor
+          POSTGRES_DB: svetofor_test
+          POSTGRES_INITDB_ARGS: --encoding=UTF8 --locale=C.UTF-8
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U svetofor"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg://svetofor:svetofor@localhost:5432/svetofor_test
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - run: uv sync --frozen
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy svetofor
+      # тесты, помеченные docker (LibreOffice, Tesseract), идут в задании docker
+      - run: uv run pytest -m "not docker" -q
+
+  frontend:
+    name: Фронтенд — eslint, tsc, тесты, сборка
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  docker:
+    name: docker compose up --build и демо-сценарий
+    needs: [backend, frontend]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      # зеркало по умолчанию в Dockerfile — российское; из GitHub быстрее официальное
+      - name: Сборка образов
+        run: docker compose build --build-arg DEBIAN_MIRROR=http://deb.debian.org/debian
+      - name: Запуск
+        run: docker compose up -d --wait --wait-timeout 600 postgres redis api nginx worker-ingest worker-llm
+      # nginx без healthcheck: --wait его не ждёт, первый запрос сразу после старта мог оборваться
+      - name: Ожидание ответа через nginx
+        run: for i in $(seq 1 60); do curl -fsS http://localhost:8080/api/health && exit 0; sleep 2; done; exit 1
+      - name: Демо-сценарий (вход, PDF- и Word-пакет, светофор, CON-01, Word-отчёт)
+        run: python3 scripts/smoke_demo.py http://localhost:8080
+      - name: Критерии приёмки (60 страниц без 504, правило без кода, ссылка на раздел)
+        # таблица — и в журнал, и в итог прогона (Summary); bash в Actions — с pipefail
+        run: python3 scripts/acceptance.py http://localhost:8080 | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Тесты, которым нужны LibreOffice и Tesseract из образа
+        run: |
+          docker compose exec -T postgres createdb -U svetofor svetofor_test
+          # тесты — на исходниках (rules/, eval/ рядом с backend), инструменты — из образа. Контейнер
+          # без привилегий (cap_drop: ALL): исходники только для чтения, работа — в копии внутри
+          docker compose run --rm -v ./:/repo:ro \
+            -e UV_CACHE_DIR=/tmp/uv-cache -e UV_PROJECT_ENVIRONMENT=/tmp/venv \
+            -e TEST_DATABASE_URL=postgresql+psycopg://svetofor:svetofor@postgres:5432/svetofor_test \
+            api sh -c "cp -r /repo /tmp/repo && cd /tmp/repo/backend && uv sync --frozen --quiet && uv run pytest -m docker -q"
+      - name: Журналы при сбое
+        if: failure()
+        run: docker compose logs --tail 200 api worker-ingest worker-llm nginx
+      - name: Остановка
+        if: always()
+        run: docker compose down -v

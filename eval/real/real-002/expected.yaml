@@ -1,0 +1,106 @@
+package: real-002
+description: 'ЕИС 0373200032226000791: текущий ремонт помещений префектуры ЮЗАО (Москва), работы,
+  НМЦК 1 901 980,43 ₽; все документы — PDF'
+law: 44-ФЗ
+# Размечал Claude 21.10.2026 по тексту документов и критериям правил (`violation_if`);
+# отчёт Светофора по пакету Claude видел до разметки — возможна предвзятость.
+annotators:
+- Claude (по критериям правил)
+expected:
+- rule: PAY-01
+  present: false  # п. 2.9.2: 7 рабочих дней
+- rule: PAY-02
+  present: true
+  document: Проект_контракта_17283245-1.pdf
+  quote_contains: Авансовый платеж не предусмотрен
+- rule: PAY-03
+  present: false  # извещение: сопровождение не требуется
+- rule: ACC-01
+  present: false  # не позднее 10 рабочих дней
+- rule: ACC-02
+  present: false
+- rule: SEC-01
+  present: false
+- rule: SEC-02
+  present: false  # 5 %
+- rule: SEC-03
+  present: true
+  document: ElectronicAuction14980069.pdf
+  quote_contains: на 25 и более процентов
+- rule: SEC-04
+  present: false  # извещение: не требуется
+- rule: SEC-05
+  present: false
+- rule: LIA-01
+  present: false  # по Правилам ПП № 1042
+- rule: LIA-02
+  present: false  # пеня и штраф заказчика есть
+- rule: LIA-03
+  present: false
+- rule: TRM-01
+  present: true  # п. 8.3.1.5: любое нарушение, подтверждённое экспертизой
+  document: Проект_контракта_17283245-1.pdf
+  quote_contains: будут подтверждены нарушения условий Контракта
+- rule: TRM-02
+  present: false
+- rule: TRM-03
+  present: false  # обеспечение по ст. 96 до подписания — обычное условие
+- rule: TERM-01
+  present: false  # работы, срок — дата «01.12.2026»; поставки товара нет
+- rule: TERM-02
+  present: false
+- rule: VOL-01
+  present: false
+- rule: VOL-02
+  present: true  # уборка, вывоз и утилизация мусора — за счёт подрядчика
+  document: Техническое_задание_17283245-1.pdf
+  quote_contains: вывоз мусора
+- rule: SUB-01
+  present: false
+- rule: SUB-02
+  present: false  # нацрежим не установлен
+- rule: SUB-03
+  present: false
+- rule: REQ-01
+  present: true  # опыт по позиции 15 раздела II приложения к ПП № 2571
+  document: Извещение (печатная форма ЕИС).txt
+  quote_contains: '2571'
+- rule: REQ-02
+  present: true  # документы об утилизации — от сторонней организации, за 1 рабочий день
+  document: Техническое_задание_17283245-1.pdf
+  quote_contains: документы, подтверждающие вывоз и утилизацию
+- rule: REQ-03
+  present: false
+- rule: WAR-01
+  present: false  # 12 месяцев
+- rule: CON-01
+  present: false
+- rule: CON-07
+  present: false
+- rule: CON-03
+  present: false  # скрытый текст по извлечённому тексту не проверить
+- rule: CON-05
+  present: false
+- rule: CON-04
+  present: false  # 5 % и там, и там
+- rule: CON-02
+  present: false
+- rule: CON-06
+  present: false  # работы до 01.12.2026, исполнение до 25.12.2026
+- rule: PAY-21
+  present: false
+- rule: SEC-21
+  present: false
+- rule: ACC-21
+  present: false
+- rule: TRM-21
+  present: false
+- rule: LIA-21
+  present: false
+facts:
+  nmck_rub: 1901980.43
+  payment_term_working_days: 7
+  acceptance_term_working_days: 10
+  contract_security_percent: 5
+  advance_percent: 0
+  warranty_months: 12

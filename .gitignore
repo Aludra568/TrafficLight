@@ -1,0 +1,52 @@
+# Секреты: ключ модели и пароли — только в .env, в репозиторий — лишь пример
+.env
+.env.*
+!.env.example
+*.pem
+# публичный корневой сертификат Минцифры для загрузки из ЕИС — не секрет, нужен в репозитории
+!backend/svetofor/pipeline/certs/*.pem
+*.key
+jwt_secret
+
+# Локальные кэши инструментов (uv, Python, временные файлы)
+.cache/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# Node
+node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/.vite/
+*.tsbuildinfo
+
+# Данные и артефакты
+/data/
+backups/
+eval/results/*.json
+!eval/results/.gitkeep
+*.log
+# недописанные файлы атомарной записи (запись во временный, затем замена)
+*.tmp
+
+# Claude Code: общие настройки и хуки (.claude/settings.json, .claude/hooks/) — в репозитории,
+# даже если глобальный игнор git исключает .claude/; личные настройки — нет
+!.claude/
+.claude/settings.local.json
+
+# IDE и ОС
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini

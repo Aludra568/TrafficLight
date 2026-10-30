@@ -1,0 +1,109 @@
+package: syn-002
+description: 'Приёмка и гарантия: долгая приёмка, экспертиза за счёт поставщика, долгая гарантия, обеспечения'
+law: 44-ФЗ
+annotators:
+- генератор (эталон по построению)
+expected:
+- rule: PAY-01
+  present: false
+- rule: PAY-02
+  present: false
+- rule: PAY-03
+  present: false
+- rule: ACC-01
+  present: true
+  document: Проект контракта.docx
+  quote_contains: 25 (двадцати пяти) рабочих дней
+- rule: ACC-02
+  present: true
+  document: Проект контракта.docx
+  quote_contains: расходы на проведение экспертизы возмещает Поставщик
+- rule: SEC-01
+  present: false
+- rule: SEC-02
+  present: true
+  document: Извещение о проведении электронного аукциона.docx
+  quote_contains: 15 процентов цены контракта
+- rule: SEC-03
+  present: false
+- rule: SEC-04
+  present: true
+  document: Извещение о проведении электронного аукциона.docx
+  quote_contains: обеспечения гарантийных обязательств составляет 10 процентов
+- rule: SEC-05
+  present: false
+- rule: LIA-01
+  present: false
+- rule: LIA-02
+  present: false
+- rule: LIA-03
+  present: false
+- rule: TRM-01
+  present: false
+- rule: TRM-02
+  present: false
+- rule: TRM-03
+  present: false
+- rule: TERM-01
+  present: false
+- rule: TERM-02
+  present: false
+- rule: VOL-01
+  present: false
+- rule: VOL-02
+  present: false
+- rule: SUB-01
+  present: false
+- rule: SUB-02
+  present: false
+- rule: SUB-03
+  present: false
+- rule: REQ-01
+  present: false
+- rule: REQ-02
+  present: false
+- rule: REQ-03
+  present: false
+- rule: WAR-01
+  present: true
+  document: Проект контракта.docx
+  quote_contains: 36 (тридцать шесть) месяцев
+- rule: CON-01
+  present: false
+- rule: CON-07
+  present: false
+- rule: CON-03
+  present: false
+- rule: CON-05
+  present: false
+- rule: CON-04
+  present: false
+- rule: CON-02
+  present: false
+- rule: CON-06
+  present: false
+- rule: PAY-21
+  present: false
+- rule: SEC-21
+  present: false
+- rule: ACC-21
+  present: false
+- rule: TRM-21
+  present: false
+- rule: LIA-21
+  present: false
+facts:
+  law: 44-ФЗ
+  procurement_number: '0373100012326000002'
+  nmck_rub: 2400000
+  contract_security_percent: 15
+  warranty_security_percent: 10
+  national_regime: none
+  quantity_total: 40
+  advance_percent: 30
+  payment_term_working_days: 7
+  delivery_term_days: 20
+  acceptance_term_working_days: 25
+  warranty_months: 36
+  penalty_rate: 1/300 ключевой ставки
+  application_deadline: 15.10.2026 10:00

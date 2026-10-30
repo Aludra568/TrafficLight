@@ -1,0 +1,18 @@
+# В контекст сборки — только исходники: кэши, зависимости и данные ставятся внутри образа
+.cache/
+**/node_modules/
+**/.venv/
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+frontend/dist/
+.git/
+.github/
+.env
+**/.env
+backups/
+eval/
+*.md
+!frontend/**/*.md

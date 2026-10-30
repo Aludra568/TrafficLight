@@ -1,0 +1,100 @@
+package: real-006
+description: 'ЕИС 0360500000326000054: поставка бумаги для офисной техники по заявкам, ГБУ Саратовской
+  области «Губернское», максимальное значение цены 99 743,04 ₽; пакет как скачан (4 файла, без извещения)'
+law: 44-ФЗ
+# Размечал Claude 21.10.2026 по тексту документов и критериям правил (`violation_if`);
+# отчёт Светофора по пакету Claude видел до разметки — возможна предвзятость.
+annotators:
+- Claude (по критериям правил)
+expected:
+- rule: PAY-01
+  present: false  # п. 3: 7 рабочих дней с подписания документа о приемке
+- rule: PAY-02
+  present: true
+  document: ПРИЛОЖЕНИЕ № 4 Проект контракта.doc
+  quote_contains: Авансовых платежей по Контракту не предусмотрено
+- rule: PAY-03
+  present: false  # только условная оговорка «если … подлежат казначейскому сопровождению»
+- rule: ACC-01
+  present: false  # не позднее 15 рабочих дней
+- rule: ACC-02
+  present: false
+- rule: SEC-01
+  present: false
+- rule: SEC-02
+  present: false  # 5 %
+- rule: SEC-03
+  present: true
+  document: ПРИЛОЖЕНИЕ № 4 Проект контракта.doc
+  quote_contains: двадцать пять и более процентов
+- rule: SEC-04
+  present: false
+- rule: SEC-05
+  present: false
+- rule: LIA-01
+  present: false  # 1 % цены, не более 5 тыс. и не менее 1 тыс. ₽ — по ПП № 1042 для СМП
+- rule: LIA-02
+  present: false
+- rule: LIA-03
+  present: false
+- rule: TRM-01
+  present: false  # основания ГК (ст. 523): существенное нарушение, неоднократная просрочка
+- rule: TRM-02
+  present: false
+- rule: TRM-03
+  present: false  # обеспечение по ст. 96 до подписания — обычное условие
+- rule: TERM-01
+  present: true  # заявка за 5 рабочих дней до поставки
+  document: ПРИЛОЖЕНИЕ № 4 Проект контракта.doc
+  quote_contains: за 5 (пять) рабочих дней до даты поставки
+- rule: TERM-02
+  present: false  # 5 рабочих дней — не «1–2 дня»
+- rule: VOL-01
+  present: true  # объём не задан: оплата по цене единицы до максимального значения
+  document: ПРИЛОЖЕНИЕ № 4 Проект контракта.doc
+  quote_contains: исходя из объема фактически поставленного Товара
+- rule: VOL-02
+  present: false  # только доставка и разгрузка по одному адресу — обычное условие
+- rule: SUB-01
+  present: false
+- rule: SUB-02
+  present: false  # извещения в пакете нет; в требованиях — «преимущество не установлено»
+- rule: SUB-03
+  present: false
+- rule: REQ-01
+  present: false  # требования п. 1 ч. 1 ст. 31 — «не требуется»
+- rule: REQ-02
+  present: false
+- rule: REQ-03
+  present: false
+- rule: WAR-01
+  present: false
+- rule: CON-01
+  present: false
+- rule: CON-07
+  present: false
+- rule: CON-03
+  present: false
+- rule: CON-05
+  present: false
+- rule: CON-04
+  present: false
+- rule: CON-02
+  present: false
+- rule: CON-06
+  present: false  # поставка до 21.12.2027, исполнение до 31.12.2027
+- rule: PAY-21
+  present: false
+- rule: SEC-21
+  present: false
+- rule: ACC-21
+  present: false
+- rule: TRM-21
+  present: false
+- rule: LIA-21
+  present: false
+facts:
+  payment_term_working_days: 7
+  acceptance_term_working_days: 15
+  contract_security_percent: 5
+  advance_percent: 0

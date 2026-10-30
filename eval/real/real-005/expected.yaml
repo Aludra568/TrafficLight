@@ -1,0 +1,107 @@
+package: real-005
+description: 'ЕИС 0173100012626000097: «Мобильный АРМ» ФССП России — поставка оборудования и ПО с
+  внедрением, НМЦК 22 208 563,33 ₽; 197 страниц'
+law: 44-ФЗ
+# Размечал Claude 21.10.2026 выборочно — по местам, найденным по темам правил, а не
+# чтением всех 197 страниц; отчёт Светофора по пакету Claude видел до разметки.
+annotators:
+- Claude (по критериям правил)
+expected:
+- rule: PAY-01
+  present: false  # не позднее 7 рабочих дней
+- rule: PAY-02
+  present: true
+  document: Приложение № 4 Проект ГК  (1).doc
+  quote_contains: Авансирование Контрактом не предусмотрено
+- rule: PAY-03
+  present: false  # извещение: не требуется
+- rule: ACC-01
+  present: false  # 20 рабочих дней — порог «больше 20»
+- rule: ACC-02
+  present: false
+- rule: SEC-01
+  present: false  # 6 662 569 ₽ = ровно 30 % НМЦК; порог «больше 30»
+- rule: SEC-02
+  present: true
+  document: Извещение (печатная форма ЕИС).txt
+  quote_contains: '6662569.00'
+- rule: SEC-03
+  present: true
+  document: Приложение № 5 Обеспечение (3).docx
+  quote_contains: на 25 и более процентов
+- rule: SEC-04
+  present: false  # извещение: не требуется
+- rule: SEC-05
+  present: false
+- rule: LIA-01
+  present: false
+- rule: LIA-02
+  present: false  # штраф и пеня заказчика есть (раздел VI)
+- rule: LIA-03
+  present: false
+- rule: TRM-01
+  present: false
+- rule: TRM-02
+  present: false
+- rule: TRM-03
+  present: false  # обеспечение по ст. 96 до подписания — обычное условие
+- rule: TERM-01
+  present: false  # поставка «до 01.12.2026» — около трёх недель после заключения
+- rule: TERM-02
+  present: false
+- rule: VOL-01
+  present: false
+- rule: VOL-02
+  present: true
+  document: Приложение № 4 Проект ГК  (1).doc
+  quote_contains: уборку и вывоз упаковочного материала
+- rule: SUB-01
+  present: false  # товарный знак без «эквивалента» — с обоснованием совместимости
+- rule: SUB-02
+  present: true
+  document: Извещение (печатная форма ЕИС).txt
+  quote_contains: Запрет закупок товаров
+- rule: SUB-03
+  present: true  # «Cистема» с латинской C
+- rule: REQ-01
+  present: true  # лицензии ФСБ и ФСТЭК, опыт исполнения контракта
+  document: Приложение № 3 Требования к содержанию, составу заявки на участие в закупке (6).docx
+  quote_contains: лицензию, выданную Федеральной службой безопасности
+- rule: REQ-02
+  present: true  # за 10 рабочих дней «получить удаленный доступ» — от заказчика
+  document: 20261015_МАРМ-ТЗ-_v40.docx
+  quote_contains: получить удаленный доступ
+- rule: REQ-03
+  present: false
+- rule: WAR-01
+  present: false  # 12 месяцев; «3 года» — техподдержка производителя, не гарантия
+- rule: CON-01
+  present: false
+- rule: CON-07
+  present: false
+- rule: CON-03
+  present: false
+- rule: CON-05
+  present: false
+- rule: CON-04
+  present: false  # в контракте — «предусмотрен извещением»
+- rule: CON-02
+  present: false
+- rule: CON-06
+  present: false  # поставка до 01.12.2026, действие контракта — по 31.12.2026
+- rule: PAY-21
+  present: false  # закупка по 44-ФЗ; правила 223-ФЗ — ложные
+- rule: SEC-21
+  present: false
+- rule: ACC-21
+  present: false
+- rule: TRM-21
+  present: false
+- rule: LIA-21
+  present: false
+facts:
+  nmck_rub: 22208563.33
+  payment_term_working_days: 7
+  acceptance_term_working_days: 20
+  advance_percent: 0
+  warranty_months: 12

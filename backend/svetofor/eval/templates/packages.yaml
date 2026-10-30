@@ -1,0 +1,141 @@
+# Синтетические пакеты: параметры закупки и выбранные варианты слотов (по умолчанию — safe).
+# Покрытие: каждое правило стартового набора заложено хотя бы в одном пакете;
+# 3 «чистых» пакета и 2 пакета-ловушки (похоже на риск, но законно).
+
+subjects:
+  paper:
+    subject: "Поставка бумаги для офисной техники"
+    subject_acc: "бумагу для офисной техники формата А4"
+    unit_text: "пачек"
+    quality: "Плотность бумаги — 80 г/м2, белизна — не менее 146 % CIE, в пачке 500 листов"
+    characteristics: "формат А4, плотность 80 г/м2, белизна не менее 146 % CIE"
+    brand_model: "SvetoCopy Classic A4 80 г/м2"
+  laptops:
+    subject: "Поставка ноутбуков"
+    subject_acc: "ноутбуки"
+    unit_text: "штук"
+    quality: "Диагональ экрана — не менее 15,6 дюйма, оперативная память — не менее 16 ГБ"
+    characteristics: "диагональ не менее 15,6 дюйма, процессор не ниже 8 ядер, ОЗУ не менее 16 ГБ"
+    brand_model: "Lenovo ThinkPad E15 Gen 4"
+  chairs:
+    subject: "Поставка офисных кресел"
+    subject_acc: "кресла офисные"
+    unit_text: "штук"
+    quality: "Кресло с регулируемой высотой сиденья, механизмом качания и подлокотниками"
+    characteristics: "регулировка высоты сиденья, механизм качания, нагрузка не менее 120 кг"
+    brand_model: "Бюрократ CH-868LT"
+
+packages:
+  - id: syn-001
+    description: "Типичный рискованный контракт: долгая оплата, нет аванса, высокая пеня, широкий отказ; «банковская гарантия»"
+    subject: paper
+    params: {quantity: 500, nmck: 1250000}
+    slots: {PAYMENT: fifteen, ADVANCE: none, PENALTY: high, TERMINATION: broad, VOLUME: by_need, SECURITY: outdated}
+
+  - id: syn-002
+    description: "Приёмка и гарантия: долгая приёмка, экспертиза за счёт поставщика, долгая гарантия, обеспечения"
+    subject: laptops
+    params: {quantity: 40, nmck: 2400000}
+    slots: {ACCEPTANCE: long, EXPERTISE: risky, WARRANTY: long, SECURITY: medium, WARRANTY_SECURITY: risky}
+
+  - id: syn-003
+    description: "Противоречия ТЗ и контракта, срочные заявки, скрытый белый текст"
+    subject: paper
+    params: {quantity: 800, quantity_spec: 750, nmck: 1980000}
+    slots: {DELIVERY: mismatch, QUANTITY: mismatch, VOLUME: urgent_requests, HIDDEN: injection}
+
+  - id: syn-004
+    description: "Извещение: товарный знак, нацрежим, доп. требования, условия подписания, антидемпинг"
+    subject: laptops
+    params: {quantity: 25, nmck: 1500000}
+    slots: {TRADEMARK: brand, NATIONAL: ban, REQ: risky, SIGNING: risky, ANTIDUMPING: risky}
+
+  - id: syn-005
+    description: "Ответственность и расторжение: высокий штраф, нет ответственности заказчика, короткий срок исправления, скрытые расходы; обеспечение в извещении и контракте разное"
+    subject: chairs
+    params: {quantity: 60, nmck: 900000}
+    slots: {FINE: high, CUSTOMER_LIABILITY: absent, CURE_PERIOD: short, EXTRAS: risky, SECURITY: mismatch}
+
+  - id: syn-006
+    description: "Критичные значения: поставка за 3 дня, оплата 45 дней, обеспечение 35 %; латиница в словах"
+    subject: paper
+    params: {quantity: 300, nmck: 780000}
+    slots: {DELIVERY: three, PAYMENT: long, SECURITY: excessive, TRADEMARK: homoglyph}
+
+  - id: syn-007
+    description: "Чистый пакет"
+    subject: paper
+    params: {quantity: 400, nmck: 1000000}
+    slots: {}
+
+  - id: syn-008
+    description: "Чистый пакет"
+    subject: chairs
+    params: {quantity: 30, nmck: 450000}
+    slots: {SMP: smp}
+
+  - id: syn-009
+    description: "Чистый пакет"
+    subject: laptops
+    params: {quantity: 15, nmck: 1100000}
+    slots: {TRADEMARK: equivalent}
+
+  - id: syn-010
+    description: "Ловушка: законные формулировки, похожие на риск (7 дней оплаты, отказ по ст. 95, штраф по ПП № 1042, гарантия 24 месяца, поставка партиями)"
+    subject: chairs
+    params: {quantity: 50, quantity_lot: 20, nmck: 700000}
+    slots: {WARRANTY: two_years, DELIVERY: ten, QUANTITY: lots}
+
+  - id: syn-011
+    description: "Ловушка: приёмка 20 рабочих дней, «или эквивалент», экспертиза силами заказчика"
+    subject: laptops
+    params: {quantity: 20, nmck: 1350000}
+    slots: {ACCEPTANCE: twenty, TRADEMARK: equivalent}
+
+  - id: syn-012
+    description: "Средние риски: оплата 10 дней, поставка 7 дней, нет аванса"
+    subject: paper
+    params: {quantity: 600, nmck: 1500000}
+    slots: {PAYMENT: ten, DELIVERY: seven, ADVANCE: none}
+
+  - id: syn-013
+    description: "Нарушения из обзора ФАС (май 2026): обязанность зависит от производителя, поставка позже срока исполнения контракта"
+    subject: chairs
+    params: {quantity: 60, nmck: 540000}
+    slots: {THIRD_PARTY: risky, CONTRACT_TERM: conflict}
+  - id: syn-014
+    description: "Казначейское сопровождение расчётов; форма первой части заявки требует сведений об участнике"
+    subject: paper
+    params: {quantity: 800, nmck: 410000}
+    slots: {TREASURY: treasury, FIRST_PART: risky}
+  - id: syn-015
+    law: "223-ФЗ"
+    description: "223-ФЗ: оплата через 20 раб. дн., обеспечение 10%, приёмка 25 раб. дн., отказ в любое время, пеня без предела"
+    subject: chairs
+    params: {quantity: 40, nmck: 360000}
+    slots: {PAYMENT_223: long, SECURITY_223: high, ACCEPTANCE_223: long, TERMINATION_223: broad, PENALTY_223: unlimited}
+  - id: syn-016
+    law: "223-ФЗ"
+    description: "Чистый пакет по 223-ФЗ: все условия в норме — должен быть зелёным"
+    subject: paper
+    params: {quantity: 300, nmck: 150000}
+  - id: syn-017
+    description: "Противоречие внутри контракта (вопрос участников организаторам): в п. 1 — 5000 пачек, в другом пункте — 3000"
+    subject: paper
+    params: {quantity: 5000, quantity_alt: 3000, nmck: 2500000}
+    slots: {QUANTITY: internal}
+
+# Демо-пакет (samples/): все типы правил на одном пакете, без перебора — как настоящая закупка
+demo:
+  id: demo-44fz-postavka
+  description: "Демо: поставка ноутбуков — оплата, аванс, объём, пеня, расторжение, товарный знак, противоречие сроков"
+  subject: laptops
+  params: {quantity: 30, nmck: 1890000, number: "0373100012326000777"}
+  slots:
+    PAYMENT: fifteen
+    ADVANCE: none
+    VOLUME: by_need
+    PENALTY: high
+    TERMINATION: broad
+    TRADEMARK: brand
+    DELIVERY: mismatch

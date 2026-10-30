@@ -1,0 +1,9 @@
+* text=auto eol=lf
+*.sh text eol=lf
+*.pdf binary
+*.docx binary
+*.doc binary
+*.xlsx binary
+*.zip binary
+*.png binary
+*.jpg binary

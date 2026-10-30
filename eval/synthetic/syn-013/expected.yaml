@@ -1,0 +1,103 @@
+package: syn-013
+description: 'Нарушения из обзора ФАС (май 2026): обязанность зависит от производителя, поставка позже срока исполнения
+  контракта'
+law: 44-ФЗ
+annotators:
+- генератор (эталон по построению)
+expected:
+- rule: PAY-01
+  present: false
+- rule: PAY-02
+  present: false
+- rule: PAY-03
+  present: false
+- rule: ACC-01
+  present: false
+- rule: ACC-02
+  present: false
+- rule: SEC-01
+  present: false
+- rule: SEC-02
+  present: false
+- rule: SEC-03
+  present: false
+- rule: SEC-04
+  present: false
+- rule: SEC-05
+  present: false
+- rule: LIA-01
+  present: false
+- rule: LIA-02
+  present: false
+- rule: LIA-03
+  present: false
+- rule: TRM-01
+  present: false
+- rule: TRM-02
+  present: false
+- rule: TRM-03
+  present: false
+- rule: TERM-01
+  present: false
+- rule: TERM-02
+  present: false
+- rule: VOL-01
+  present: false
+- rule: VOL-02
+  present: false
+- rule: SUB-01
+  present: false
+- rule: SUB-02
+  present: false
+- rule: SUB-03
+  present: false
+- rule: REQ-01
+  present: false
+- rule: REQ-02
+  present: true
+  document: Проект контракта.docx
+  quote_contains: уведомлять Заказчика о подаче производителем
+- rule: REQ-03
+  present: false
+- rule: WAR-01
+  present: false
+- rule: CON-01
+  present: false
+- rule: CON-07
+  present: false
+- rule: CON-03
+  present: false
+- rule: CON-05
+  present: false
+- rule: CON-04
+  present: false
+- rule: CON-02
+  present: false
+- rule: CON-06
+  present: true
+  document: Проект контракта.docx
+  quote_contains: не позднее 15 октября
+- rule: PAY-21
+  present: false
+- rule: SEC-21
+  present: false
+- rule: ACC-21
+  present: false
+- rule: TRM-21
+  present: false
+- rule: LIA-21
+  present: false
+facts:
+  law: 44-ФЗ
+  procurement_number: '0373100012326000013'
+  nmck_rub: 540000
+  contract_security_percent: 5
+  national_regime: none
+  quantity_total: 60
+  advance_percent: 30
+  payment_term_working_days: 7
+  delivery_term_days: 20
+  acceptance_term_working_days: 5
+  warranty_months: 12
+  penalty_rate: 1/300 ключевой ставки
+  application_deadline: 15.10.2026 10:00

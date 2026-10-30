@@ -1,0 +1,107 @@
+package: syn-015
+description: '223-ФЗ: оплата через 20 раб. дн., обеспечение 10%, приёмка 25 раб. дн., отказ в любое время, пеня
+  без предела'
+law: 44-ФЗ
+annotators:
+- генератор (эталон по построению)
+expected:
+- rule: PAY-01
+  present: false
+- rule: PAY-02
+  present: false
+- rule: PAY-03
+  present: false
+- rule: ACC-01
+  present: false
+- rule: ACC-02
+  present: false
+- rule: SEC-01
+  present: false
+- rule: SEC-02
+  present: false
+- rule: SEC-03
+  present: false
+- rule: SEC-04
+  present: false
+- rule: SEC-05
+  present: false
+- rule: LIA-01
+  present: false
+- rule: LIA-02
+  present: false
+- rule: LIA-03
+  present: false
+- rule: TRM-01
+  present: false
+- rule: TRM-02
+  present: false
+- rule: TRM-03
+  present: false
+- rule: TERM-01
+  present: false
+- rule: TERM-02
+  present: false
+- rule: VOL-01
+  present: false
+- rule: VOL-02
+  present: false
+- rule: SUB-01
+  present: false
+- rule: SUB-02
+  present: false
+- rule: SUB-03
+  present: false
+- rule: REQ-01
+  present: false
+- rule: REQ-02
+  present: false
+- rule: REQ-03
+  present: false
+- rule: WAR-01
+  present: false
+- rule: CON-01
+  present: false
+- rule: CON-07
+  present: false
+- rule: CON-03
+  present: false
+- rule: CON-05
+  present: false
+- rule: CON-04
+  present: false
+- rule: CON-02
+  present: false
+- rule: CON-06
+  present: false
+- rule: PAY-21
+  present: true
+  document: Проект договора.docx
+  quote_contains: 20 (двадцати) рабочих дней
+- rule: SEC-21
+  present: true
+  document: Извещение о проведении запроса котировок.docx
+  quote_contains: 10 процентов цены договора
+- rule: ACC-21
+  present: true
+  document: Проект договора.docx
+  quote_contains: 25 (двадцати пяти) рабочих дней
+- rule: TRM-21
+  present: true
+  document: Проект договора.docx
+  quote_contains: в любое время отказаться от исполнения Договора
+- rule: LIA-21
+  present: true
+  document: Проект договора.docx
+  quote_contains: 0,5 процента цены Договора
+facts:
+  law: 223-ФЗ
+  procurement_number: '0373100012326000015'
+  nmck_rub: 360000
+  quantity_total: 40
+  advance_percent: 30
+  delivery_term_days: 20
+  warranty_months: 12
+  application_deadline: 15.10.2026 10:00
+  payment_term_working_days: 20
+  contract_security_percent: 10
+  acceptance_term_working_days: 25

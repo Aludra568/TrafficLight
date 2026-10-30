@@ -1,0 +1,165 @@
+# Светофор: docker compose up --build → http://localhost:8080
+#
+# .env необязателен: без него работает демо-режим. Ключ модели и прочие настройки — в .env
+# (копия .env.example); переменные ниже — инфраструктура со значениями по умолчанию.
+
+# имя проекта явно: из имени папки на кириллице («Проект») Compose получает пустое имя
+name: svetofor
+
+x-app: &app
+  image: svetofor-app
+  pull_policy: never  # образ собирает сервис api, из реестра его не тянуть
+  # init-процесс (tini) собирает завершившиеся процессы: LibreOffice в контейнере оставляет
+  # зомби-подпроцессы, если PID 1 их не убирает (LibreOffice bug 142772)
+  init: true
+  env_file:
+    - path: .env
+      required: false
+  environment: &app-env
+    DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-svetofor}:${POSTGRES_PASSWORD:-svetofor}@postgres:5432/${POSTGRES_DB:-svetofor}
+    REDIS_URL: redis://redis:6379/0
+    EMBED_URL: ${EMBED_URL:-http://embedder:80}
+    DATA_DIR: /data
+    RULES_DIR: /app/rules
+    DEMO_PACKAGE: /app/samples/demo_44fz_postavka.zip
+  volumes:
+    - appdata:/data
+  restart: unless-stopped
+  # Процессы приложения работают от пользователя app (Dockerfile) и разбирают чужие файлы:
+  # если разборщик документа взломан, у процесса нет ни особых прав ядра, ни способа их получить
+  # (setuid-программы не повышают права), а число процессов ограничено (fork-бомба)
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+  pids_limit: 1024
+  networks: [default, internal]
+
+# internal — сеть без выхода наружу: база и Redis доступны только приложению, а не nginx и не
+# интернету. default — обычная сеть: через неё nginx
+# ходит к API, модель скачивается, а воркеры обращаются к облачной модели
+networks:
+  internal:
+    internal: true
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-svetofor}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-svetofor}
+      POSTGRES_DB: ${POSTGRES_DB:-svetofor}
+      # UTF-8: поиск по истории не различает регистр кириллицы
+      POSTGRES_INITDB_ARGS: --encoding=UTF8 --locale=C.UTF-8
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      retries: 30
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    networks: [internal]
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 30
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    networks: [internal]
+
+  # Смысловой поиск. Модель (~2 ГБ) скачивается при первом запуске — несколько минут.
+  # Проверки не ждут её: пока сервис не готов, поиск идёт по тексту, и отчёт об этом пишет.
+  embedder:
+    # 1.8: в 1.5 старый клиент HuggingFace не понимает относительные перенаправления хаба
+    # («relative URL without a base») — модель не скачивалась
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.8
+    # пачка 4096 токенов: по умолчанию TEI прогревает модель пачкой 16 384 токена и на CPU при
+    # 6–8 ГБ памяти падает на прогреве; наши фрагменты не длиннее CHUNK_MAX_TOKENS=700
+    command:
+      - --model-id
+      - ${EMBED_MODEL:-BAAI/bge-m3}
+      - --max-batch-tokens
+      - "4096"
+      - --max-client-batch-size
+      - "64"
+      - --auto-truncate
+    volumes:
+      - hfcache:/data
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    # default — скачать модель при первом запуске, internal — отвечать приложению
+    networks: [default, internal]
+
+  api:
+    <<: *app
+    pull_policy: build
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command:
+      - sh
+      - -c
+      # --forwarded-allow-ips: API доступен только nginx во внутренней сети (порт не проброшен);
+      # без него uvicorn верит заголовку только от 127.0.0.1, и все пользователи для лимита
+      # попыток входа — один адрес nginx: 50 чужих ошибок закрывали вход всем
+      - alembic upgrade head && python -m svetofor.seed && exec uvicorn svetofor.api.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips '*' --no-access-log
+    volumes:
+      - appdata:/data
+      # наборы оценки и результаты прогонов (make eval) — прямо в папке проекта
+      - ./eval:/app/eval
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      embedder: {condition: service_started}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/health"]
+      interval: 5s
+      retries: 60
+      start_period: 20s
+
+  # распаковка, конвертация, OCR, структура, эмбеддинги, итог; процессы — LibreOffice и OCR
+  # тяжёлые и иногда падают, отдельный процесс на задачу изолирует сбой
+  worker-ingest:
+    <<: *app
+    command: ["celery", "-A", "svetofor.tasks.celery_app", "worker", "-Q", "ingest,default", "--pool=prefork", "--concurrency=${INGEST_CONCURRENCY:-4}", "--loglevel=INFO"]
+    depends_on:
+      api: {condition: service_healthy}
+
+  # вызовы модели: ожидание сети, поэтому потоки
+  worker-llm:
+    <<: *app
+    command: ["celery", "-A", "svetofor.tasks.celery_app", "worker", "-Q", "llm", "--pool=threads", "--concurrency=${LLM_MAX_CONCURRENCY:-8}", "--loglevel=INFO"]
+    depends_on:
+      api: {condition: service_healthy}
+
+  nginx:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "${APP_PORT:-8080}:80"
+    depends_on:
+      api: {condition: service_healthy}
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    # файлы конфигурации и интерфейса только читаются; писать nginx может лишь во временные папки
+    read_only: true
+    tmpfs: [/var/cache/nginx, /var/run, /tmp]
+
+  # полностью офлайн: docker compose --profile local-llm up --build
+  # и в .env LLM_BASE_URL=http://ollama:11434/v1
+  ollama:
+    image: ollama/ollama
+    profiles: ["local-llm"]
+    volumes:
+      - ollama:/root/.ollama
+    restart: unless-stopped
+
+volumes:
+  pgdata: {}
+  appdata: {}
+  hfcache: {}
+  ollama: {}

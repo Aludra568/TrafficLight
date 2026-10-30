@@ -1,0 +1,104 @@
+package: real-003
+description: 'ЕИС 0338200008626000446: поставка сливочного масла по заявкам, ГБУЗ «Камчатская краевая
+  детская больница», НМЦК 1 995 708 ₽'
+law: 44-ФЗ
+# Размечал Claude 21.10.2026 по тексту документов и критериям правил (`violation_if`);
+# отчёт Светофора по пакету Claude видел до разметки — возможна предвзятость.
+annotators:
+- Claude (по критериям правил)
+expected:
+- rule: PAY-01
+  present: false  # п. 2.4: 7 рабочих дней
+- rule: PAY-02
+  present: true  # аванс нигде не упомянут — по сути не предусмотрен
+- rule: PAY-03
+  present: false  # извещение: сопровождение не требуется
+- rule: ACC-01
+  present: false  # п. 3.4: не более 5 рабочих дней
+- rule: ACC-02
+  present: false  # экспертиза силами заказчика или по его контрактам
+- rule: SEC-01
+  present: false
+- rule: SEC-02
+  present: true
+  document: Извещение (печатная форма ЕИС).txt
+  quote_contains: '10.00%'
+- rule: SEC-03
+  present: true
+  document: II. Проект контракта.docx
+  quote_contains: на 25 и
+- rule: SEC-04
+  present: false  # извещение: обеспечение гарантийных обязательств не требуется
+- rule: SEC-05
+  present: false  # «банковскую гарантию» один раз в п. 8.10 среди «независимой гарантии»
+- rule: LIA-01
+  present: false  # штрафы по ПП № 1042
+- rule: LIA-02
+  present: false  # пп. 7.9, 7.10
+- rule: LIA-03
+  present: false  # 1/300 ключевой ставки
+- rule: TRM-01
+  present: false
+- rule: TRM-02
+  present: false
+- rule: TRM-03
+  present: false  # обеспечение по ст. 96 до подписания — обычное условие
+- rule: TERM-01
+  present: true
+  document: II. Проект контракта.docx
+  quote_contains: 2 (двух) календарных дней
+- rule: TERM-02
+  present: true
+  document: II. Проект контракта.docx
+  quote_contains: 2 (двух) календарных дней
+- rule: VOL-01
+  present: false  # общий объём 1 300 кг, по заявкам — только разбивка на партии
+- rule: VOL-02
+  present: false  # только доставка и разгрузка по одному адресу — обычное условие
+- rule: SUB-01
+  present: false
+- rule: SUB-02
+  present: true
+  document: Извещение (печатная форма ЕИС).txt
+  quote_contains: Ограничение закупок товаров
+- rule: SUB-03
+  present: false
+- rule: REQ-01
+  present: true  # опыт по ПП № 2571, позиция 33
+  document: Требование к содержанию, составу заявки (масло сливочное).docx
+- rule: REQ-02
+  present: false  # сертификаты и удостоверения качества — обычные для пищевых
+- rule: REQ-03
+  present: false
+- rule: WAR-01
+  present: false  # гарантийного срока нет, есть остаточный срок годности
+- rule: CON-01
+  present: false  # в ТЗ срока поставки нет — противоречия нет
+- rule: CON-07
+  present: false
+- rule: CON-03
+  present: false  # форматирование не проверял — только текст
+- rule: CON-05
+  present: false
+- rule: CON-04
+  present: false  # 10 % и в извещении, и в контракте
+- rule: CON-02
+  present: false  # 1 300 кг и в ТЗ, и в приложении к контракту
+- rule: CON-06
+  present: false  # поставка и действие контракта — до 31.12.2027
+- rule: PAY-21
+  present: false
+- rule: SEC-21
+  present: false
+- rule: ACC-21
+  present: false
+- rule: TRM-21
+  present: false
+- rule: LIA-21
+  present: false
+facts:
+  nmck_rub: 1995708
+  payment_term_working_days: 7
+  acceptance_term_working_days: 5
+  delivery_term_days: 2
+  contract_security_percent: 10
