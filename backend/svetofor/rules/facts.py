@@ -310,6 +310,8 @@ def procurement_law(documents: Sequence[DocumentFacts]) -> str | None:
     модель или разные документы называют разные законы (или в тексте упомянуты оба), закон не
     определён. Иначе модель, прочитавшая «223-ФЗ» в оговорке «положения 223-ФЗ не применяются»,
     выводила бы пакет из-под правил 44-ФЗ (безопасность зелёного, шаг 1).
+    Если закон не определён по факту law, он определяется по длине реестрового номера:
+    19 цифр — 44-ФЗ, 11 цифр — 223-ФЗ.
     """
     values: set[str] = set()
     for document in documents:
@@ -320,7 +322,22 @@ def procurement_law(documents: Sequence[DocumentFacts]) -> str | None:
         if fact.conflict and fact.conflict.get("value") is not None:
             values.add(str(fact.conflict["value"]))
         values.update(str(c["value"]) for c in fact.candidates if c.get("value") is not None)
-    return values.pop() if len(values) == 1 else None
+    if len(values) == 1:
+        return values.pop()
+
+    number_lengths: list[int] = []
+    for document in documents:
+        fact = document.facts.get("procurement_number")
+        if fact is None:
+            continue
+        digits = re.sub(r"\D", "", str(fact.value))
+        number_lengths.append(len(digits))
+    if number_lengths:
+        if all(length == 19 for length in number_lengths):
+            return "44-ФЗ"
+        if all(length == 11 for length in number_lengths):
+            return "223-ФЗ"
+    return None
 
 
 def fits_whole(chunks: Sequence[SourceChunk], budget: int = CONTEXT_TOKENS) -> bool:

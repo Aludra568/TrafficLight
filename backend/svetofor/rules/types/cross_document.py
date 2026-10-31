@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
 
 from svetofor.db.enums import DocType, FindingKind, RuleOutcome
@@ -27,6 +28,44 @@ from svetofor.rules.types.threshold import fact_evidence
 from svetofor.rules.verify import normalize
 
 _UNIT_TITLES = {"working": "раб. дн.", "calendar": "календ. дн."}
+
+
+def normalize_unit(unit: str | None) -> str:
+    """Нормализация единицы измерения: синонимы к каноническому виду, нижний регистр."""
+    if not unit:
+        return ""
+    cleaned = re.sub(r"[\s.]+", "", unit.lower())
+    if not cleaned:
+        return ""
+    if cleaned in {"шт", "ед"} or cleaned.startswith("штук") or cleaned.startswith("единиц"):
+        return "шт"
+    if (
+        cleaned in {"м2", "м²", "квм", "квм2", "квм²"}
+        or cleaned.startswith("квметр")
+        or cleaned.startswith("квадратн")
+    ):
+        return "м2"
+    if (
+        cleaned in {"м3", "м³", "кубм", "кубм3", "кубм³"}
+        or cleaned.startswith("кубметр")
+        or cleaned.startswith("кубометр")
+        or cleaned.startswith("кубическ")
+    ):
+        return "м3"
+    if cleaned == "кг" or cleaned.startswith("килограмм"):
+        return "кг"
+    if cleaned == "т" or cleaned.startswith("тонн"):
+        return "т"
+    if cleaned == "л" or cleaned.startswith("литр"):
+        return "л"
+    if (
+        cleaned in {"м", "погм", "пм"}
+        or cleaned.startswith("погметр")
+        or cleaned.startswith("погонн")
+        or cleaned.startswith("метр")
+    ):
+        return "м"
+    return cleaned
 
 
 def best_fact(ctx: CheckContext, key: str, doc_type: DocType) -> FactValue | None:
@@ -71,6 +110,21 @@ class CrossDocumentEvaluator(RuleEvaluator):
                 return not_checked(rule.id, f"карточка закупки не заполнена: {errors[0]}", "facts")
             label = FACTS[rule.fact].label.lower()
             return not_checked(rule.id, f"значение «{label}» найдено не в обоих документах")
+        spec = FACTS[rule.fact]
+        if (
+            spec.kind is FactKind.NUMBER
+            and not rule.fact.endswith("_days")
+            and first.unit
+            and second.unit
+            and first.unit.strip()
+            and second.unit.strip()
+            and normalize_unit(first.unit) != normalize_unit(second.unit)
+        ):
+            return not_checked(
+                rule.id,
+                f"В документах разные единицы измерения: {first.unit.strip()} и "
+                f"{second.unit.strip()} — сравнить нельзя",
+            )
         if same_value(first, second):
             return ok_with_evidence(rule.id, fact_evidence(first, ctx), fact_evidence(second, ctx))
         finding = FindingDraft(
