@@ -46,8 +46,11 @@ from svetofor.rules.verify import TextSource
 
 CHECK_TASK = "check_group"
 # v3: текст документа — в начале промпта, правила — после (общий префикс кэшируется провайдером)
-CHECK_TEMPLATE = "check_group.v3"
-_TOKENS_PER_RULE = 400
+# v4: у правила могут быть пограничные примеры (examples); без них текст как в v3
+CHECK_TEMPLATE = "check_group.v4"
+# с пограничными примерами модель объясняет подробнее;
+# при 400 ответы на группу обрывались (оценка 31.10)
+_TOKENS_PER_RULE = 700
 _NUMBERS = re.compile(r"\d+(?:[.,]\d+)?")
 
 

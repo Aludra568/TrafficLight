@@ -192,6 +192,68 @@ class TestValidation:
             parse_ruleset(raw)
         assert raw == before
 
+    def test_rule_with_two_examples_valid(self) -> None:
+        ex1 = {
+            "text": "Заказчик вправе отказаться при просрочке любой партии.",
+            "verdict": "violation",
+            "why": "Разовая просрочка не является существенным нарушением.",
+        }
+        ex2 = {
+            "text": "Отказ допускается по основаниям ст. 95 Закона № 44-ФЗ.",
+            "verdict": "ok",
+            "why": "Законные основания отказа являются стандартным условием.",
+        }
+        rs = parse_ruleset(ruleset(llm(examples=[ex1, ex2])))
+        rule = rs.rules[0]
+        assert isinstance(rule, LlmCheckRule)
+        assert len(rule.examples) == 2
+        assert rule.examples[0].text == ex1["text"]
+        assert rule.examples[0].verdict == "violation"
+        assert rule.examples[0].why == ex1["why"]
+        assert rule.examples[1].text == ex2["text"]
+        assert rule.examples[1].verdict == "ok"
+        assert rule.examples[1].why == ex2["why"]
+
+    def test_example_invalid_verdict_rejected(self) -> None:
+        raw = llm(
+            examples=[
+                {
+                    "text": "Заказчик вправе отказаться при просрочке любой партии.",
+                    "verdict": "maybe",
+                    "why": "Непонятный вердикт.",
+                }
+            ]
+        )
+        assert "verdict" in problems_of(ruleset(raw))
+
+    def test_too_many_examples_rejected(self) -> None:
+        example = {
+            "text": "Отказ допускается по основаниям ст. 95 Закона № 44-ФЗ.",
+            "verdict": "ok",
+            "why": "Законные основания отказа являются стандартным условием.",
+        }
+        raw = llm(examples=[example] * 7)
+        assert "examples" in problems_of(ruleset(raw))
+
+    def test_example_extra_field_forbidden(self) -> None:
+        raw = llm(
+            examples=[
+                {
+                    "text": "Отказ допускается по основаниям ст. 95 Закона № 44-ФЗ.",
+                    "verdict": "ok",
+                    "why": "Законные основания отказа являются стандартным условием.",
+                    "extra": "forbidden",
+                }
+            ]
+        )
+        assert "extra" in problems_of(ruleset(raw))
+
+    def test_rule_without_examples_defaults_to_empty_list(self) -> None:
+        rs = parse_ruleset(ruleset(llm()))
+        rule = rs.rules[0]
+        assert isinstance(rule, LlmCheckRule)
+        assert rule.examples == []
+
 
 class TestTemplates:
     def test_render(self) -> None:

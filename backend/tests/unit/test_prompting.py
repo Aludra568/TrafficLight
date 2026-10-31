@@ -115,3 +115,19 @@ def test_answer_fields_follow_reasoning_order() -> None:
     assert fact_fields.index("quote") < fact_fields.index("value")
     prompt = render(CHECK_TEMPLATE, rules=llm_rules()[:1], chunks=CHUNKS)
     assert prompt.user.index("- quote") < prompt.user.index("- verdict")
+
+
+def test_check_group_v4_with_and_without_examples() -> None:
+    rules = llm_rules()
+    rule_with_ex = next(r for r in rules if r.examples)
+    prompt = render("check_group.v4", rules=[rule_with_ex], chunks=CHUNKS)
+    assert f"Примеры к правилу {rule_with_ex.id}" in prompt.user
+    for ex in rule_with_ex.examples:
+        assert ex.text in prompt.user
+    assert "нарушение" in prompt.user
+    assert "нормально" in prompt.user
+
+    rule_without_ex = next(r for r in rules if not r.examples)
+    p_v3 = render("check_group.v3", rules=[rule_without_ex], chunks=CHUNKS)
+    p_v4 = render("check_group.v4", rules=[rule_without_ex], chunks=CHUNKS)
+    assert p_v4.user == p_v3.user

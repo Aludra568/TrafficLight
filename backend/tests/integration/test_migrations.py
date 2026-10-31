@@ -11,6 +11,7 @@ from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from svetofor.core.config import get_settings
 from svetofor.core.ids import uuid7
 from svetofor.db.enums import CheckStatus
 from svetofor.db.models import Base, Check, Chunk, Document, Package
@@ -94,7 +95,7 @@ def test_russian_fulltext_and_vector_search(db: Session) -> None:
         "Поставка товара осуществляется в течение 10 рабочих дней",
     ]
     for i, t in enumerate(texts):
-        vec = [0.0] * 1024
+        vec = [0.0] * get_settings().embed_dim  # миграция 0007 — размерность из EMBED_DIM
         vec[i] = 1.0
         db.add(
             Chunk(
@@ -124,7 +125,8 @@ def test_russian_fulltext_and_vector_search(db: Session) -> None:
     )
     assert fts == [texts[0]]  # морфология: «обеспечения контрактов» нашло «обеспечение … контракта»
 
-    query = "[" + ",".join(["0"] + ["1"] + ["0"] * 1022) + "]"
+    # Поведение изменилось по задаче: миграция 0007 — размерность из EMBED_DIM
+    query = "[" + ",".join(["0"] + ["1"] + ["0"] * (get_settings().embed_dim - 2)) + "]"
     nearest = db.execute(
         text(
             "select text from chunks where document_id=:d "
@@ -147,7 +149,8 @@ def test_migrations_apply_on_empty_database(pg_url: str) -> None:
         engine = create_engine(fresh_url)
         with engine.connect() as conn:
             head = conn.execute(text("select version_num from alembic_version")).scalar()
-            assert head == "0006"
+            # Поведение изменилось по задаче: миграция 0007 — последняя ревизия
+            assert head == "0007"
             light = conn.execute(
                 text("select pg_get_constraintdef(oid) from pg_constraint where conname = :n"),
                 {"n": "ck_checks_light"},

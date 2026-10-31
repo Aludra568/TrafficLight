@@ -31,6 +31,12 @@ from svetofor.eval.metrics import (
     PackageResult,
     PairResult,
     channel_conflicts,
+    extra_by_package,
+    extra_reason,
+    extra_reasons,
+    missed_by_package,
+    missed_reason,
+    missed_reasons,
     per_rule,
     timing,
 )
@@ -140,6 +146,7 @@ def collect(
                 outcome in (None, RuleOutcome.NOT_CHECKED),
                 location,
                 context_ok,
+                is_llm=item["rule"] in llm_rules,
             )
         )
     for key, value in (data.get("facts") or {}).items():
@@ -206,6 +213,10 @@ def summarize(results: list[PackageResult]) -> dict[str, Any]:
         "timing": timing(results),
         "per_rule": per_rule(results),
         "conflicts": channel_conflicts(results),
+        "missed_reasons": missed_reasons(results),
+        "extra_reasons": extra_reasons(results),
+        "missed_by_package": missed_by_package(results),
+        "extra_by_package": extra_by_package(results),
     }
 
 
@@ -257,6 +268,25 @@ def markdown(report: dict[str, Any]) -> str:
     ]
     for rule, row in report["per_rule"].items():
         lines.append(f"| {rule} | {row['tp']} | {row['fp']} | {row['fn']} | {row['not_checked']} |")
+
+    missed_data = report.get("missed_reasons") or report.get("why_missed") or {}
+    missed_pkgs = report.get("missed_by_package") or {}
+    counts = [f"- {r}: {n}" for r, n in missed_data.items() if n > 0]
+    lines += ["", "### Почему пропущено", ""]
+    lines.extend(counts or ["Пропусков нет."])
+    if any(missed_pkgs.values()):
+        lines += ["", "По пакетам:"]
+        lines.extend(f"- {pkg}: {', '.join(items)}" for pkg, items in missed_pkgs.items() if items)
+
+    extra_data = report.get("extra_reasons") or report.get("where_extra") or {}
+    extra_pkgs = report.get("extra_by_package") or {}
+    counts = [f"- {r}: {n}" for r, n in extra_data.items() if n > 0]
+    lines += ["", "### Откуда лишние", ""]
+    lines.extend(counts or ["Лишних замечаний нет."])
+    if any(extra_pkgs.values()):
+        lines += ["", "По пакетам:"]
+        lines.extend(f"- {pkg}: {', '.join(items)}" for pkg, items in extra_pkgs.items() if items)
+
     return "\n".join(lines) + "\n"
 
 
@@ -296,6 +326,16 @@ def run_set(
                 # расхождения с эталоном — с чего начинать разбор и проверку разметки
                 "missed": [p.rule for p in r.pairs if p.expected and not p.predicted],
                 "extra": [p.rule for p in r.pairs if p.predicted and not p.expected],
+                "missed_reasons": [
+                    f"{p.rule}: {missed_reason(p)}"
+                    for p in r.pairs
+                    if p.expected and not p.predicted
+                ],
+                "extra_reasons": [
+                    f"{p.rule}: {extra_reason(p)}"
+                    for p in r.pairs
+                    if p.predicted and not p.expected
+                ],
             }
             for r in results
         ],

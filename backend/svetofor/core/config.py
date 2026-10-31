@@ -54,6 +54,8 @@ class Settings(BaseSettings):
     llm_timeout_s: float = Field(120.0, gt=0)
     # запас токенов на рассуждения для моделей, которые считают их в лимите ответа
     llm_reasoning_tokens: int = Field(4000, ge=0)
+    # выключить, если провайдер не понимает параметр thinking (отключение рассуждений)
+    llm_thinking_toggle: bool = True
     # длина контекста модели в токенах: из неё — сколько текста документа класть в промпт
     llm_context_tokens: int = Field(32768, ge=4096)
     # второе мнение модели по красным нарушениям (ещё один короткий вызов на группу замечаний)
@@ -65,8 +67,10 @@ class Settings(BaseSettings):
 
     # Эмбеддинги
     embed_url: str = "http://embedder:80"
-    embed_model: str = "BAAI/bge-m3"
-    embed_dim: int = Field(1024, ge=8)
+    # e5-small: на CPU вдвое быстрее и легче bge-m3 при том же качестве поиска (замер 31.10.2026);
+    # фрагмент читается до 512 токенов. Смена модели — EMBED_MODEL/EMBED_DIM и make reembed
+    embed_model: str = "intfloat/multilingual-e5-small"
+    embed_dim: int = Field(384, ge=8)
 
     # Лимиты обработки
     max_upload_mb: int = Field(100, ge=1)

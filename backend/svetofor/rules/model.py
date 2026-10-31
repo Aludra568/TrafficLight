@@ -232,12 +232,22 @@ class ThresholdRule(RuleBase):
         return self
 
 
+class RuleExample(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    text: str = Field(min_length=10, max_length=600)
+    verdict: Literal["violation", "ok"]
+    why: str = Field(min_length=5, max_length=300)
+
+
 class LlmCheckRule(RuleBase):
     type: Literal["llm_check"]
     group: str = Field(pattern=r"^[a-z_]{2,40}$")
     question: str = Field(min_length=10, max_length=1000)
     violation_if: str = Field(min_length=5, max_length=1000)
     ok_if: str = Field(min_length=5, max_length=1000)
+    # пограничные примеры для калибровки модели: формулировка, вердикт и объяснение
+    examples: list[RuleExample] = Field(default_factory=list, max_length=6)
     search_hints: list[str] = Field(min_length=1)
     absent_behavior: AbsentBehavior = AbsentBehavior.IGNORE
     absent_severity: Severity | None = None

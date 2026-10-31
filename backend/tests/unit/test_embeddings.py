@@ -56,6 +56,28 @@ def test_cache_avoids_recompute() -> None:
     assert second[:2] == [first[1], first[0]]
 
 
+@respx.mock
+def test_deduplicates_texts_in_same_call_without_cache() -> None:
+    route = respx.post(f"{URL}/embed").mock(side_effect=vectors_for)
+    texts = ["а-текст", "б-текст", "а-текст"]
+    vectors = embedder().embed_passages(texts)
+    assert route.call_count == 1
+    assert json.loads(route.calls[0].request.content)["inputs"] == ["а-текст", "б-текст"]
+    assert len(vectors) == 3
+    assert vectors[0] == vectors[2]
+
+
+@respx.mock
+def test_deduplicates_forty_identical_texts() -> None:
+    route = respx.post(f"{URL}/embed").mock(side_effect=vectors_for)
+    texts = ["одинаковый текст"] * 40
+    vectors = embedder().embed_passages(texts)
+    assert route.call_count == 1
+    assert json.loads(route.calls[0].request.content)["inputs"] == ["одинаковый текст"]
+    assert len(vectors) == 40
+    assert all(v == vectors[0] for v in vectors)
+
+
 def test_redis_cache_roundtrip() -> None:
     cache = RedisEmbeddingCache(fakeredis.FakeRedis())
     cache.put_many({"k": [0.5, -1.25, 3.0]})

@@ -21,6 +21,102 @@ class PairResult:
     # смысловое правило: эталонный фрагмент был среди фрагментов, которые видела модель
     # (качество поиска отдельно от модели; None — поиск не запускался)
     context_ok: bool | None = None
+    is_llm: bool | None = None
+
+
+MISSED_REASONS: tuple[str, ...] = (
+    "не проверено",
+    "нужное место не попало к модели",
+    "модель видела место, но не признала риск",
+    "правило без модели не сработало",
+    "причина не определена",
+)
+
+EXTRA_REASONS: tuple[str, ...] = (
+    "смысловое правило (модель)",
+    "правило без модели",
+    "причина не определена",
+)
+
+
+def missed_reason(pair: PairResult) -> str:
+    """Причина пропуска риска (FN)."""
+    if pair.not_checked:
+        return "не проверено"
+    if pair.context_ok is False:
+        return "нужное место не попало к модели"
+    if pair.context_ok is True:
+        return "модель видела место, но не признала риск"
+    if pair.is_llm is False:
+        return "правило без модели не сработало"
+    return "причина не определена"
+
+
+def extra_reason(pair: PairResult) -> str:
+    """Категория лишнего замечания (FP)."""
+    if pair.is_llm is True:
+        return "смысловое правило (модель)"
+    if pair.is_llm is False:
+        return "правило без модели"
+    return "причина не определена"
+
+
+def missed_reasons(results: Sequence[PackageResult]) -> dict[str, int]:
+    """Распределение причин пропуска рисков."""
+    counts = {reason: 0 for reason in MISSED_REASONS}
+    for pair in _pairs(results):
+        if pair.expected and not pair.predicted:
+            counts[missed_reason(pair)] += 1
+    return counts
+
+
+def extra_reasons(results: Sequence[PackageResult]) -> dict[str, int]:
+    """Распределение источников лишних замечаний."""
+    counts = {reason: 0 for reason in EXTRA_REASONS}
+    for pair in _pairs(results):
+        if not pair.expected and pair.predicted:
+            counts[extra_reason(pair)] += 1
+    return counts
+
+
+def missed_by_package(results: Sequence[PackageResult]) -> dict[str, list[str]]:
+    """Пропуски по пакетам в формате «правило: причина»."""
+    by_pkg: dict[str, list[str]] = {}
+    for result in results:
+        items = [
+            f"{p.rule}: {missed_reason(p)}" for p in result.pairs if p.expected and not p.predicted
+        ]
+        if items:
+            by_pkg[result.package] = items
+    return by_pkg
+
+
+def extra_by_package(results: Sequence[PackageResult]) -> dict[str, list[str]]:
+    """Лишние замечания по пакетам в формате «правило: причина»."""
+    by_pkg: dict[str, list[str]] = {}
+    for result in results:
+        items = [
+            f"{p.rule}: {extra_reason(p)}" for p in result.pairs if not p.expected and p.predicted
+        ]
+        if items:
+            by_pkg[result.package] = items
+    return by_pkg
+
+
+def reasons_by_package(results: Sequence[PackageResult]) -> dict[str, list[str]]:
+    """Все расхождения по пакетам в формате «правило: причина»."""
+    by_pkg: dict[str, list[str]] = {}
+    for result in results:
+        items = [
+            f"{p.rule}: {missed_reason(p)}" for p in result.pairs if p.expected and not p.predicted
+        ] + [f"{p.rule}: {extra_reason(p)}" for p in result.pairs if not p.expected and p.predicted]
+        if items:
+            by_pkg[result.package] = items
+    return by_pkg
+
+
+why_missed = missed_reasons
+where_extra = extra_reasons
 
 
 def _same(expected: object, actual: object) -> bool:

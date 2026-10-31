@@ -115,7 +115,7 @@ def test_verified_facts_with_document_offsets() -> None:
     assert pay.quote == "в течение 7 рабочих дней с даты подписания"
     assert result.facts["advance_percent"].value == 0.0
     assert result.facts["delivery_term_days"].unit == "calendar"
-    assert result.model == "m" and result.prompt_version == "facts.v2+system.v1"
+    assert result.model == "m" and result.prompt_version == "facts.v3+system.v1+nothink"
 
 
 def test_quote_from_wrong_chunk_is_still_found() -> None:

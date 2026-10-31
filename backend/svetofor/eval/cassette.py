@@ -1,10 +1,11 @@
-"""Кассета демо: ответы настоящей модели для демо-пакета — «Попробовать на примере» без ключа.
+"""Кассета демо: ответы настоящей модели для демо-пакетов — «Попробовать на примере» без ключа.
 
-Демо-пакет проверяется с моделью, каждый её ответ записывается в `samples/demo_llm_cassette.jsonl`
-под ключом без имени модели (`LLMGateway._to_cassette`). Без ключа шлюз работает в режиме replay
-и находит там ответы на те же промпты. Ключ включает текст промпта, версию шаблона и схему
-ответа, поэтому после правки правил, промптов или демо-пакета кассету нужно записать заново —
-устаревшие ответы просто не найдутся, выдуманных не появится.
+Демо-пакеты проверяются с моделью, каждый её ответ записывается в
+`samples/demo_llm_cassette.jsonl` под ключом без имени модели (`LLMGateway._to_cassette`).
+Без ключа шлюз работает в режиме replay и находит там ответы на те же промпты. Ключ включает
+текст промпта, версию шаблона и схему ответа, поэтому после правки правил, промптов или
+демо-пакетов кассету нужно записать заново — устаревшие ответы просто не найдутся,
+выдуманных не появится.
 
     docker compose run --rm -v ./samples:/app/samples api python -m svetofor.eval cassette
     docker compose up -d --build   # кассета входит в образ (make demo-cassette — обе команды)
@@ -14,6 +15,7 @@ from __future__ import annotations
 
 import shutil
 import tempfile
+from collections.abc import Sequence
 from pathlib import Path
 
 from svetofor.core.config import Settings
@@ -25,10 +27,10 @@ from svetofor.rules.store import latest_ruleset_version
 from svetofor.tasks import checks
 
 
-def record(settings: Settings, package: Path, target: Path) -> tuple[int, str, int]:
-    """Проверить пакет с моделью, записывая ответы в кассету.
+def record(settings: Settings, packages: Sequence[Path], target: Path) -> tuple[int, str, int]:
+    """Проверить пакеты с моделью, записывая ответы в кассету.
 
-    → (число записей, итог проверки, правил не проверено из-за сбоя модели). Сбойный вызов в
+    → (число записей, итоги проверок через «, », сумма правил «не проверено»). Сбойный вызов в
     кассету не попадает, и демо без ключа покажет эти правила «не проверено» — такую запись
     надо повторить (20.10.2026: модель один раз вернула негодный ответ на группу из 3 правил).
     """
@@ -42,29 +44,38 @@ def record(settings: Settings, package: Path, target: Path) -> tuple[int, str, i
             raise LookupError(f"Набор правил «{settings.default_ruleset}» не загружен")
         version_id = version.id
     services.ingest.packages_dir.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(dir=services.ingest.packages_dir) as tmp:
-        upload = Path(tmp) / package.name
-        shutil.copyfile(package, upload)
+    lights: list[str] = []
+    total_failed = 0
+    for package in packages:
+        with tempfile.TemporaryDirectory(dir=services.ingest.packages_dir) as tmp:
+            upload = Path(tmp) / package.name
+            shutil.copyfile(package, upload)
+            with services.session_factory() as db:
+                check = create_check(
+                    db,
+                    upload=upload,
+                    original_name=package.name,
+                    config=services.ingest,
+                    ruleset_version_id=version_id,
+                )
+                db.commit()
+                check_id = check.id
+        with inline_tasks(services):
+            checks.run_check.delay(str(check_id))
         with services.session_factory() as db:
-            check = create_check(
-                db,
-                upload=upload,
-                original_name=package.name,
-                config=services.ingest,
-                ruleset_version_id=version_id,
-            )
-            db.commit()
-            check_id = check.id
-    with inline_tasks(services):
-        checks.run_check.delay(str(check_id))
-    with services.session_factory() as db:
-        done = db.get(Check, check_id)
-        light = done.light.value if done and done.light else "—"
-        failed = int(done.counters.get("rules_failed", 0)) if done else 0
-        package_row = db.get(Package, done.package_id) if done else None
-        if package_row is not None:  # служебная проверка не засоряет историю
-            PackagePaths(Path(package_row.storage_path)).remove()
-            db.delete(package_row)
-            db.commit()
-    entries = sum(1 for line in target.read_text(encoding="utf-8").splitlines() if line.strip())
-    return entries, light, failed
+            done = db.get(Check, check_id)
+            light = done.light.value if done and done.light else "—"
+            failed = int(done.counters.get("rules_failed", 0)) if done else 0
+            package_row = db.get(Package, done.package_id) if done else None
+            if package_row is not None:  # служебная проверка не засоряет историю
+                PackagePaths(Path(package_row.storage_path)).remove()
+                db.delete(package_row)
+                db.commit()
+        lights.append(light)
+        total_failed += failed
+    entries = (
+        sum(1 for line in target.read_text(encoding="utf-8").splitlines() if line.strip())
+        if target.is_file()
+        else 0
+    )
+    return entries, ", ".join(lights), total_failed

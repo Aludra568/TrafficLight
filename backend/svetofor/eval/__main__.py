@@ -113,10 +113,12 @@ def _cassette(args: argparse.Namespace) -> int:
     from svetofor.eval.cassette import record
 
     settings = get_settings()
-    package = Path(args.package) if args.package else settings.demo_package
+    base = Path(args.package) if args.package else settings.demo_package
+    pdf = base.with_name(f"{base.stem}_pdf{base.suffix}")
+    packages = [base, pdf] if pdf.is_file() else [base]
     target = Path(args.out) if args.out else settings.demo_cassette
     try:
-        entries, light, failed = record(settings, package, target)
+        entries, light, failed = record(settings, packages, target)
     except (RuntimeError, LookupError) as exc:  # нет ключа модели или набора правил
         print(f"Кассета не записана: {exc}", file=sys.stderr)
         return 2

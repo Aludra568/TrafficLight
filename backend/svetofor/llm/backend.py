@@ -18,6 +18,7 @@ from typing import Any, Literal, Protocol
 
 import openai
 
+from svetofor.core.logging import get_logger
 from svetofor.llm.errors import (
     LLMContextTooLongError,
     LLMError,
@@ -26,8 +27,14 @@ from svetofor.llm.errors import (
     LLMUnavailableError,
 )
 
+log = get_logger(__name__)
+
 Role = Literal["system", "user", "assistant"]
 _UNSUPPORTED = re.compile(r"unsupported|not support|only the default|does not accept")
+_UNKNOWN_PARAM = re.compile(
+    r"unknown parameter|unsupported parameter|unrecognized parameter|unexpected parameter|"
+    r"extra fields|extra_body|not accept.*parameter"
+)
 # «This model's maximum context length is 8192 tokens…» (OpenAI, vLLM), «prompt is too long» и т. п.
 _CONTEXT_TOO_LONG = re.compile(
     r"context.{0,20}length|maximum context|context window|too many tokens|prompt is too long"
@@ -48,6 +55,7 @@ class ChatRequest:
     max_tokens: int
     json_schema: dict[str, Any] | None = None  # None — просим просто JSON-объект
     schema_name: str = "answer"
+    thinking: bool = True
 
 
 @dataclass(frozen=True)
@@ -111,6 +119,7 @@ class OpenAIBackend:
         reasoning_tokens: int = 4000,
         project: str | None = None,
         client: openai.OpenAI | None = None,
+        thinking_toggle: bool = True,
     ) -> None:
         self._client = client or openai.OpenAI(
             base_url=base_url,
@@ -122,16 +131,19 @@ class OpenAIBackend:
         )
         self._supports_json_schema = supports_json_schema
         self._reasoning_tokens = reasoning_tokens  # запас на рассуждения сверх длины ответа
+        self._thinking_toggle = thinking_toggle
         # что принимает провайдер — уточняется по первым ошибкам 400 и запоминается
         self._response_format_ok = True
         self._completion_tokens = False  # max_completion_tokens вместо max_tokens
         self._temperature_ok = True
 
+    @property
+    def thinking_toggle(self) -> bool:
+        return self._thinking_toggle
+
     def complete(self, request: ChatRequest) -> ChatReply:
         if not self._supports_json_schema and request.json_schema is not None:
-            request = ChatRequest(
-                request.model, request.messages, request.max_tokens, None, request.schema_name
-            )
+            request = replace(request, json_schema=None)
         reply = self._complete_adapted(request)
         if reply.finish_reason != "length" or self._completion_tokens or not self._reasoning_tokens:
             return reply
@@ -147,19 +159,27 @@ class OpenAIBackend:
         )
 
     def _complete_adapted(self, request: ChatRequest) -> ChatReply:
-        for _attempt in range(4):  # по одной подстройке на каждый параметр + сам запрос
+        for _attempt in range(5):  # по одной подстройке на каждый параметр + сам запрос
             try:
                 return self._call(request)
             except openai.BadRequestError as exc:
-                if not self._adapt(str(exc)):
+                if not self._adapt(str(exc), request):
                     raise _map_error(exc) from exc
             except openai.OpenAIError as exc:
                 raise _map_error(exc) from exc
         raise LLMRequestRejectedError("Модель отклонила запрос")
 
-    def _adapt(self, error: str) -> bool:
+    def _adapt(self, error: str, request: ChatRequest | None = None) -> bool:
         """Провайдер не принимает параметр — дальше запросы без него. False — подстроиться нечем."""
         text = error.lower()
+        if (
+            self._thinking_toggle
+            and (request is None or request.thinking is False)
+            and self._is_thinking_error(text)
+        ):
+            self._thinking_toggle = False
+            log.warning("thinking_toggle_unsupported")
+            return True
         if self._response_format_ok and "response_format" in text:
             self._response_format_ok = False
         elif not self._completion_tokens and "max_completion_tokens" in text:
@@ -169,6 +189,22 @@ class OpenAIBackend:
         else:
             return False
         return True
+
+    def _is_thinking_error(self, text: str) -> bool:
+        if "thinking" in text:
+            return True
+        if _UNKNOWN_PARAM.search(text):
+            return not any(
+                param in text
+                for param in (
+                    "response_format",
+                    "temperature",
+                    "max_tokens",
+                    "max_completion_tokens",
+                    "context",
+                )
+            )
+        return False
 
     def _call(self, request: ChatRequest) -> ChatReply:
         extra: dict[str, Any] = {}
@@ -180,6 +216,10 @@ class OpenAIBackend:
             extra["max_tokens"] = request.max_tokens
         if self._temperature_ok:
             extra["temperature"] = 0
+        if self._thinking_toggle and request.thinking is False:
+            extra_body = dict(extra.get("extra_body") or {})
+            extra_body["thinking"] = {"type": "disabled"}
+            extra["extra_body"] = extra_body
         completion = self._client.chat.completions.create(
             model=request.model,
             messages=[{"role": m.role, "content": m.content} for m in request.messages],  # type: ignore[misc]

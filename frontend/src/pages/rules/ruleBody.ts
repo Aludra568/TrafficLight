@@ -12,7 +12,7 @@ export function toBody(original: Body, values: Body): Body {
     body.scope = body.scope ?? "chunk";
   }
   if (body.type !== "llm_check") {
-    for (const key of ["group", "question", "violation_if", "ok_if", "search_hints", "absent_behavior", "absent_severity", "absent_message"]) {
+    for (const key of ["group", "question", "violation_if", "ok_if", "search_hints", "absent_behavior", "absent_severity", "absent_message", "examples"]) {
       delete body[key];
     }
   }
@@ -29,6 +29,13 @@ export function toBody(original: Body, values: Body): Body {
   } else {
     delete body.severity;
   }
-  if (body.type === "llm_check" && !body.group) body.group = "custom";
+  if (body.type === "llm_check") {
+    if (!body.group) body.group = "custom";
+    if (Array.isArray(body.examples)) {
+      body.examples = (body.examples as unknown[]).filter((item) => item !== undefined && item !== null);
+    } else if ("examples" in body && body.examples === undefined) {
+      delete body.examples;
+    }
+  }
   return body;
 }

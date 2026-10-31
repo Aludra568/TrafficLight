@@ -28,4 +28,31 @@ describe("toBody", () => {
     expect(body.severity).toBeUndefined();
     expect(body.fact).toBe("payment_term_days");
   });
+
+  it("у не-смыслового правила examples удаляется", () => {
+    const original = {
+      ...BASE,
+      type: "pattern",
+      examples: [{ text: "исходный пример", verdict: "violation", why: "почему" }],
+    };
+    const body = toBody(original, {
+      phrases: "поставка",
+      examples: [{ text: "новый пример", verdict: "ok", why: "почему" }],
+    });
+    expect(body.examples).toBeUndefined();
+  });
+
+  it("у llm_check примеры из формы попадают в тело как есть", () => {
+    const examples = [
+      { text: "Поставка в выходные дни допускается по согласованию сторон.", verdict: "violation", why: "выходные дни" },
+      { text: "Поставка осуществляется исключительно в рабочие дни.", verdict: "ok", why: "только рабочие дни" },
+    ];
+    const body = toBody({ ...BASE, type: "llm_check" }, { examples });
+    expect(body.examples).toEqual(examples);
+  });
+
+  it("у llm_check пустой список примеров или с undefined очищается от пустых элементов", () => {
+    const body = toBody({ ...BASE, type: "llm_check" }, { examples: [undefined] });
+    expect(body.examples).toEqual([]);
+  });
 });

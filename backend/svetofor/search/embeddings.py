@@ -130,14 +130,27 @@ class Embedder:
         cached: list[list[float] | None] = (
             self._cache.get_many(keys) if self._cache else [None] * len(texts)
         )
-        missing = [i for i, vector in enumerate(cached) if vector is None]
+        missing_keys: list[str] = []
+        key_to_indices: dict[str, list[int]] = {}
+        key_to_text: dict[str, str] = {}
+        for i, vector in enumerate(cached):
+            if vector is None:
+                key = keys[i]
+                if key not in key_to_indices:
+                    missing_keys.append(key)
+                    key_to_indices[key] = [i]
+                    key_to_text[key] = texts[i]
+                else:
+                    key_to_indices[key].append(i)
+
         fresh: dict[str, list[float]] = {}
-        for start in range(0, len(missing), BATCH_SIZE):
-            batch = missing[start : start + BATCH_SIZE]
-            vectors = self._request([texts[i] for i in batch])
-            for i, vector in zip(batch, vectors, strict=True):
-                cached[i] = vector
-                fresh[keys[i]] = vector
+        for start in range(0, len(missing_keys), BATCH_SIZE):
+            batch_keys = missing_keys[start : start + BATCH_SIZE]
+            vectors = self._request([key_to_text[k] for k in batch_keys])
+            for key, vector in zip(batch_keys, vectors, strict=True):
+                fresh[key] = vector
+                for idx in key_to_indices[key]:
+                    cached[idx] = vector
         if fresh and self._cache:
             self._cache.put_many(fresh)
         return [v for v in cached if v is not None]

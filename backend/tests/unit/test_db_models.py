@@ -3,6 +3,7 @@
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.schema import CreateIndex, CreateTable
 
+from svetofor.core.config import get_settings
 from svetofor.db.models import Base
 
 EXPECTED_TABLES = {
@@ -44,7 +45,7 @@ def test_all_tables_present() -> None:
 
 def test_ddl_compiles_for_postgres() -> None:
     ddl = compile_ddl()
-    assert "VECTOR(1024)" in ddl
+    assert f"VECTOR({get_settings().embed_dim})" in ddl  # размерность — из EMBED_DIM
     assert "USING hnsw (embedding vector_cosine_ops)" in ddl
     assert "USING gin (tsv)" in ddl
     assert "to_tsvector('russian'" in ddl

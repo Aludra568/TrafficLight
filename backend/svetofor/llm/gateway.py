@@ -207,7 +207,10 @@ class LLMGateway:
         prompt_version: str,
         max_tokens: int = 2000,
         check_id: uuid.UUID | None = None,
+        thinking: bool = True,
     ) -> LLMResult[T]:
+        if not thinking:
+            prompt_version = f"{prompt_version}+nothink"
         model = self._models[model_role]
         messages = (Message("system", system), Message("user", user))
         key = cache_key(model, messages, prompt_version, schema)
@@ -243,7 +246,9 @@ class LLMGateway:
 
         started = self._clock()
         try:
-            value, tokens_in, tokens_out = self._ask(model, messages, schema, max_tokens)
+            value, tokens_in, tokens_out = self._ask(
+                model, messages, schema, max_tokens, thinking=thinking
+            )
         except LLMError as exc:
             self._fail(task, model, exc, check_id, started)
         latency = self._clock() - started
@@ -304,7 +309,12 @@ class LLMGateway:
         raise AssertionError("недостижимо: последний проход либо отвечает, либо бросает")
 
     def _ask[T: BaseModel](
-        self, model: str, messages: tuple[Message, ...], schema: type[T], max_tokens: int
+        self,
+        model: str,
+        messages: tuple[Message, ...],
+        schema: type[T],
+        max_tokens: int,
+        thinking: bool = True,
     ) -> tuple[T, int, int]:
         json_schema = schema.model_json_schema()
         system = Message("system", f"{messages[0].content}\n\n{schema_instructions(json_schema)}")
@@ -314,6 +324,7 @@ class LLMGateway:
             max_tokens=max_tokens,
             json_schema=json_schema if self._supports_json_schema else None,
             schema_name=schema.__name__,
+            thinking=thinking,
         )
         reply = self._send(request)
         tokens_in, tokens_out = reply.tokens_in, reply.tokens_out
@@ -342,6 +353,7 @@ class LLMGateway:
             max_tokens=request.max_tokens,
             json_schema=request.json_schema,
             schema_name=request.schema_name,
+            thinking=thinking,
         )
         second = self._send(repair)
         tokens_in, tokens_out = tokens_in + second.tokens_in, tokens_out + second.tokens_out
@@ -411,6 +423,7 @@ def build_gateway(
             supports_json_schema=settings.llm_supports_json_schema,
             reasoning_tokens=settings.llm_reasoning_tokens,
             project=settings.llm_project,
+            thinking_toggle=settings.llm_thinking_toggle,
         )
     return LLMGateway(
         mode=settings.effective_llm_mode,

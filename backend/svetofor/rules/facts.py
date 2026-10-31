@@ -24,7 +24,8 @@ from svetofor.rules.numerals import spelled_numbers
 from svetofor.rules.verify import QuoteVerifier, TextSource, normalize
 
 FACTS_TASK = "facts"
-FACTS_TEMPLATE = "facts.v2"
+# v3: модель возвращает только найденные поля, экономя выходные токены на пустых значениях
+FACTS_TEMPLATE = "facts.v3"
 CONTEXT_TOKENS = 12_000  # больше — фрагменты подбирает поиск по подсказкам фактов
 _NUMBER = re.compile(r"\d{1,3}(?:[  ]\d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?")
 _UNITS = {
@@ -198,6 +199,7 @@ class FactExtractor:
                 prompt_version=prompt.version,
                 max_tokens=3000,
                 check_id=check_id,
+                thinking=False,
             )
         except LLMContextTooLongError as exc:
             budget = sum(c.token_count for c in chunks) // 2

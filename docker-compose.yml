@@ -70,19 +70,25 @@ services:
     security_opt: ["no-new-privileges:true"]
     networks: [internal]
 
-  # Смысловой поиск. Модель (~2 ГБ) скачивается при первом запуске — несколько минут.
+  # Смысловой поиск. Модель (~0,5 ГБ) скачивается при первом запуске.
   # Проверки не ждут её: пока сервис не готов, поиск идёт по тексту, и отчёт об этом пишет.
   embedder:
     # 1.8: в 1.5 старый клиент HuggingFace не понимает относительные перенаправления хаба
     # («relative URL without a base») — модель не скачивалась
     image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.8
-    # пачка 4096 токенов: по умолчанию TEI прогревает модель пачкой 16 384 токена и на CPU при
-    # 6–8 ГБ памяти падает на прогреве; наши фрагменты не длиннее CHUNK_MAX_TOKENS=700
+    # Память: по умолчанию TEI прогревает модель пачкой 16 384 токена и держит токенизатор на
+    # каждое ядро — на CPU это 5,5 ГБ и падения при 8 ГБ у Docker. Пачка 2048 токенов (фрагменты
+    # не длиннее CHUNK_MAX_TOKENS=700), 2 токенизатора, 16 запросов разом. Замер 31.10, 64 фрагмента:
+    # bge-m3 — 2,1 ГБ и 61 с, e5-small (по умолчанию) — 1,0 ГБ и 30 с
     command:
       - --model-id
-      - ${EMBED_MODEL:-BAAI/bge-m3}
+      - ${EMBED_MODEL:-intfloat/multilingual-e5-small}
       - --max-batch-tokens
-      - "4096"
+      - "2048"
+      - --tokenization-workers
+      - "2"
+      - --max-concurrent-requests
+      - "16"
       - --max-client-batch-size
       - "64"
       - --auto-truncate

@@ -41,6 +41,7 @@ const NEW_RULE: Body = {
   violation_if: "",
   ok_if: "",
   search_hints: [],
+  examples: [],
   severity: "yellow",
   absent_behavior: "ignore",
   message: "",
@@ -208,6 +209,85 @@ export function RuleEditor({ code, open, onClose }: { code: string | null; open:
                 </Form.Item>
                 <Form.Item name="search_hints" label="Ключевые слова для поиска" rules={[{ required: true, message: "Хотя бы одно слово" }]} extra="Введите слово и нажмите Enter">
                   <Select mode="tags" tokenSeparators={[","]} placeholder="выходные дни, праздничные дни, график поставки" />
+                </Form.Item>
+                <Form.Item
+                  label="Пограничные примеры"
+                  extra="Короткая формулировка из договора и вывод: риск или нет. Помогают отличать похожие случаи. До 6 примеров"
+                >
+                  <Form.List name="examples">
+                    {(fields, { add, remove }) => (
+                      <div style={{ marginTop: 8 }}>
+                        {fields.map((field, index) => (
+                          <div
+                            key={field.key}
+                            style={{ display: "flex", flexWrap: "wrap", gap: "0 8px", alignItems: "flex-start", marginBottom: 8 }}
+                          >
+                            <Form.Item
+                              {...field}
+                              name={[field.name, "text"]}
+                              rules={[
+                                { required: true, message: "Введите формулировку" },
+                                { min: 10, max: 600, message: "От 10 до 600 символов" },
+                              ]}
+                              style={{ flex: "2 1 260px", marginBottom: 8 }}
+                            >
+                              <Input.TextArea
+                                rows={2}
+                                placeholder="Формулировка"
+                                aria-label={`Формулировка ${index + 1}`}
+                                maxLength={600}
+                              />
+                            </Form.Item>
+                            <Form.Item
+                              {...field}
+                              name={[field.name, "verdict"]}
+                              rules={[{ required: true, message: "Выберите вывод" }]}
+                              style={{ width: 130, marginBottom: 8 }}
+                            >
+                              <Select
+                                options={[
+                                  { value: "violation", label: "Риск" },
+                                  { value: "ok", label: "Не риск" },
+                                ]}
+                                placeholder="Вывод"
+                                aria-label={`Вывод ${index + 1}`}
+                              />
+                            </Form.Item>
+                            <Form.Item
+                              {...field}
+                              name={[field.name, "why"]}
+                              rules={[
+                                { required: true, message: "Укажите причину" },
+                                { min: 5, max: 300, message: "От 5 до 300 символов" },
+                              ]}
+                              style={{ flex: "2 1 200px", marginBottom: 8 }}
+                            >
+                              <Input
+                                placeholder="Почему"
+                                aria-label={`Почему ${index + 1}`}
+                                maxLength={300}
+                              />
+                            </Form.Item>
+                            <Button
+                              type="text"
+                              icon={<MinusCircleOutlined />}
+                              aria-label={`Убрать пример ${index + 1}`}
+                              title="Убрать пример"
+                              onClick={() => remove(field.name)}
+                            />
+                          </div>
+                        ))}
+                        <Button
+                          type="dashed"
+                          icon={<PlusOutlined />}
+                          disabled={fields.length >= 6}
+                          onClick={() => add({ verdict: "violation" })}
+                        >
+                          Добавить пример
+                        </Button>
+                      </div>
+                    )}
+                  </Form.List>
                 </Form.Item>
               </>
             )}
