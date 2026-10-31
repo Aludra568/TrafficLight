@@ -233,3 +233,9 @@ cd frontend && npm run lint && npm test
 make smoke                                       # демо-сценарий на запущенном стеке
 make acceptance                                  # критерии приёмки на запущенном стеке
 ```
+
+## Контакты
+
+Вопросы по проекту и API — Юрий Башев:
+- Telegram: [@ybashev](https://t.me/ybashev) — предпочтительно;
+- почта: ysb13@tpu.ru.
