@@ -60,7 +60,9 @@ class Budgets:
 
     @classmethod
     def for_context(cls, context_tokens: int) -> Budgets:
-        return cls(min(6000, context_tokens // 4), min(12_000, context_tokens // 2))
+        # поиск: 12 000 при контексте 32K — с квотой мест в hybrid.py так нужный пункт попадал
+        # к модели в 17 из 18 случаев на eval/real против 13 из 18 при 6000 (замер 31.10.2026)
+        return cls(min(12_000, context_tokens * 3 // 8), min(12_000, context_tokens // 2))
 
 
 @dataclass(frozen=True)

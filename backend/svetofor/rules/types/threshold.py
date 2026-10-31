@@ -34,6 +34,7 @@ from svetofor.rules.results import (
 )
 from svetofor.rules.templates import render
 from svetofor.rules.types import RuleEvaluator, register
+from svetofor.rules.types.threshold_dates import DateEstimate, estimate_from_date
 from svetofor.rules.verify import normalize
 
 WORKING_PER_CALENDAR = 5 / 7
@@ -231,6 +232,9 @@ class ThresholdEvaluator(RuleEvaluator):
             if rule.fact in _GOODS_FACTS and not supplies_goods(ctx):
                 # услуги или работы: срока поставки нет и быть не должно — не замечание
                 return not_checked(rule.id, _NO_GOODS)
+            dated = estimate_from_date(rule, ctx)
+            if dated is not None:  # «до 01.12.2026»: дни — оценка от окончания подачи заявок
+                return self._dated(rule, dated)
             return self._missing(rule, ctx)
         # Значений может быть несколько: второй канал карточки прочитал иначе, в документе
         # несколько сроков (этапы), цифры и пропись разошлись. Светофор — по худшему из них:
@@ -372,6 +376,35 @@ class ThresholdEvaluator(RuleEvaluator):
             related={"fact": rule.fact, "unreadable_numbers": [t.raw for t in terms]},
         )
         return RuleOutcomeDraft(rule.id, RuleOutcome.ABSENT, None, (finding,))
+
+    @staticmethod
+    def _dated(rule: ThresholdRule, dated: DateEstimate) -> RuleOutcomeDraft:
+        evidence = Evidence.from_chunk(dated.term.chunk, dated.term.start, dated.term.end)
+        condition = _first_condition(rule, dated.fact)
+        if condition is None:
+            ok = ok_with_evidence(rule.id, evidence)
+            return replace(ok, details={**(ok.details or {}), "estimate": dated.note})
+        finding = FindingDraft(
+            rule_id=rule.id,
+            kind=FindingKind.VIOLATION,
+            severity=condition.severity,
+            title=rule.title,
+            message=render(
+                rule.message,
+                value=f"≈{display_value(rule.fact, dated.fact.value)}",
+                quote=dated.fact.quote,
+            ),
+            explanation=dated.note,
+            evidence=(evidence,),
+            document_id=dated.fact.document_id,
+            related={
+                "fact": rule.fact,
+                "value": dated.fact.value,
+                "unit": dated.fact.unit,
+                "estimated_from_date": dated.term.date.isoformat(),
+            },
+        )
+        return RuleOutcomeDraft(rule.id, RuleOutcome.VIOLATION, None, (finding,))
 
     @staticmethod
     def _missing(rule: ThresholdRule, ctx: CheckContext) -> RuleOutcomeDraft:

@@ -29,6 +29,7 @@ from svetofor.search.embeddings import Embedder, EmbeddingError
 log = get_logger(__name__)
 RRF_K = 60
 PER_METHOD = 20
+QUOTA = 2  # первые места каждого списка — вне очереди RRF (1 и 2 дали одно и то же, 3 — хуже)
 
 
 @dataclass(frozen=True)
@@ -51,6 +52,16 @@ def rrf_merge[K: Hashable](
     order = {item: i for i, item in enumerate(scores)}
     merged = sorted(scores, key=lambda item: (-scores[item], order[item]))
     return [(item, scores[item], ranks[item]) for item in merged]
+
+
+def quota_first[K: Hashable](
+    merged: Sequence[tuple[K, float, dict[str, int]]], quota: int
+) -> list[tuple[K, float, dict[str, int]]]:
+    """Результат RRF: сначала то, что хотя бы в одном списке на месте ≤ `quota` (по лучшему
+    месту, при равенстве — порядок RRF), затем остальное в порядке RRF."""
+    head = [m for m in merged if min(m[2].values()) <= quota]
+    head.sort(key=lambda m: min(m[2].values()))
+    return head + [m for m in merged if min(m[2].values()) > quota]
 
 
 def fts_query(hints: Sequence[str]) -> str:
@@ -139,11 +150,15 @@ class HybridSearch:
         queries: Sequence[Query],
         limit: int | None = None,
         per_method: int = PER_METHOD,
+        quota: int = QUOTA,
     ) -> SearchResult:
         """Списки по каждому запросу (вектор + полнотекст) → один RRF.
 
-        `limit` по умолчанию растёт с числом запросов: каждому правилу — хотя бы ~3 фрагмента
-        (итог всё равно ограничивает бюджет токенов в `expand`).
+        `quota`: первые места каждого списка идут раньше остальных, а сколько фрагментов
+        поместится, решает бюджет токенов в `expand`. Так у каждого правила есть свои лучшие
+        фрагменты: без квоты RRF поднимал фрагменты, средне подходящие многим правилам, выше
+        лучшего фрагмента одного правила, и тот не попадал в отрезанный топ.
+        `quota=0` — прежний порядок: RRF и топ `max(8, 3 × число запросов)`.
         """
         rankings: dict[str, list[uuid.UUID]] = {}
         vectors = self._query_vectors(queries)
@@ -156,8 +171,13 @@ class HybridSearch:
             rankings[f"text:{index}"] = self._text_ranking(
                 package_id, doc_types, query.hints, per_method
             )
-        top = limit if limit is not None else max(8, 3 * len(queries))
-        merged = rrf_merge(rankings)[:top]
+        merged = rrf_merge(rankings)
+        if quota:
+            merged = quota_first(merged, quota)
+            top = limit if limit is not None else len(merged)
+        else:
+            top = limit if limit is not None else max(8, 3 * len(queries))
+        merged = merged[:top]
         hits = [SearchHit(chunk_id, score, ranks) for chunk_id, score, ranks in merged]
         return SearchResult(hits, vector_used=vectors is not None)
 

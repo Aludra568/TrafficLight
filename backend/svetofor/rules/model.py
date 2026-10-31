@@ -96,6 +96,19 @@ class OnMissing(BaseModel):
     message: str = Field(min_length=3, max_length=500)
 
 
+class FromDate(BaseModel):
+    """Срок, заданный датой окончания («до 01.12.2026»): дни от `start_fact` (окончание подачи
+    заявок) до этой даты минус `lag_days` — время на заключение контракта. Это оценка."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    start_fact: Literal["application_deadline"] = "application_deadline"
+    lag_days: int = Field(20, ge=0, le=120)
+
+
+# поля, для которых умеем найти дату окончания (svetofor.rules.dated_terms)
+DATED_FACTS = frozenset({"delivery_term_days"})
+
 _RULE_ID = r"^[A-Z]{2,5}-\d{2,3}$"
 
 
@@ -225,10 +238,13 @@ class ThresholdRule(RuleBase):
     fact: str
     conditions: list[ThresholdCondition] = Field(min_length=1)
     on_missing: OnMissing | None = None
+    from_date: FromDate | None = None
 
     @model_validator(mode="after")
     def _fact_and_literals_match(self) -> ThresholdRule:
         _check_fact_literals(self.fact, self.conditions)
+        if self.from_date is not None and self.fact not in DATED_FACTS:
+            raise ValueError(f"from_date для факта «{self.fact}» не поддерживается")
         return self
 
 

@@ -4,7 +4,7 @@ API     := $(COMPOSE) exec api
 RUN     := $(COMPOSE) run --rm api
 SET     ?= synthetic
 
-.PHONY: eval-ocr demo-cassette up down logs ps build test smoke acceptance test-local lint lint-local fmt eval eval-baseline eval-generate eval-boundary eval-boundary-sweep demo-package stress-package migrate seed reembed rules-import backup reset
+.PHONY: eval-ocr demo-cassette up down logs ps build test smoke acceptance test-local lint lint-local fmt eval eval-retrieval eval-baseline eval-generate eval-boundary eval-boundary-sweep demo-package stress-package migrate seed reembed rules-import backup reset
 
 up:              ## Поднять всё приложение (http://localhost:8080)
 	$(COMPOSE) up --build -d
@@ -53,6 +53,9 @@ fmt:
 
 eval:            ## Метрики качества: make eval SET=synthetic|real
 	$(RUN) python -m svetofor.eval run --set $(SET)
+
+eval-retrieval:  ## Поиск без модели: нужный фрагмент в контексте (make eval-retrieval SET=real)
+	$(RUN) python -m svetofor.eval retrieval --set $(SET)
 
 eval-baseline:   ## Базовая линия «текст файлов + модель» на том же наборе (нужен ключ модели)
 	$(RUN) python -m svetofor.eval baseline --set $(SET)

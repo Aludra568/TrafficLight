@@ -26,6 +26,7 @@ from typing import Any
 from svetofor.db.enums import DocType
 from svetofor.rules.facts import DocumentFacts, FactValue, SourceChunk, facts_for, numbers_in
 from svetofor.rules.facts_catalog import FACTS, FactKind
+from svetofor.rules.national_regime import national_regime
 from svetofor.rules.numerals import NUMERAL, parse_numeral
 from svetofor.rules.types.pattern import sentence_span
 from svetofor.rules.verify import NormalizedText, normalize_with_map
@@ -153,20 +154,6 @@ def _deadline(match: re.Match[str]) -> Converted:
 
 def _law(match: re.Match[str]) -> Converted:
     return ("44-ФЗ" if match.group(1).startswith("44") else "223-ФЗ", None)
-
-
-def _regime(match: re.Match[str]) -> Converted | None:
-    sentence = match.group(0)
-    if re.search(r"не\s+установлен", sentence):
-        return ("none", None)
-    for word, value in (
-        ("запрет", "ban"),
-        ("ограничени", "restriction"),
-        ("преимуществ", "advantage"),
-    ):
-        if word in sentence:
-            return (value, None)
-    return None
 
 
 def _p(
@@ -366,7 +353,23 @@ PATTERNS: tuple[_Pattern, ...] = (
     _p(
         "national_regime",
         r"[^.;]*(?:запрет\w*|ограничени\w*|преимуществ\w*)[^.;]*(?:иностранн|происходящ)[^.;]*",
-        _regime,
+        national_regime,
+    ),
+    _p(
+        # ст. 94 ч. 13 в «Умном контракте» ЕИС: срок стоит до слова «приемке», якорь его не видит
+        "acceptance_term_working_days",
+        rf"{_TERM}{_AMOUNT}{_DAYS}[,\s]+следующ\w*\s+за\s+дн\w*\s+поступлени\w*\s+"
+        r"(?:заказчику\s+)?документа\s+о\s+приемке",
+        _days,
+    ),
+    _p(
+        # таблица «Умного контракта» ЕИС: «5 раб. дн. от даты предоставления документа-основания
+        # "Документ о приемке"» — срок подписания заказчиком; извлечение из PDF перемешивает
+        # колонки, поэтому хвост «…основания "Документ о приемке"» не требуется (оплата там
+        # отсчитывается «от даты подписания», не «предоставления»)
+        "acceptance_term_working_days",
+        rf"{_AMOUNT}{_DAYS}\s+от\s+даты\s+предоставления\s+документа",
+        _days,
     ),
     _p("smp_only", r"только\s+субъект\w*\s+малого\s+предпринимательства", _constant(True)),
     _p(
@@ -581,6 +584,13 @@ _OTHER_SUBJECT = {
     "delivery_term_days": (
         r"\bза\s+[^.;]{0,40}?(?:дн|день|дня|час)\w*[^.;]{0,40}?\bдо\b[^.;]*уведом"
         r"|уведом[^.;]*\bза\s+[^.;]{0,40}?(?:дн|день|дня|час)\w*[^.;]{0,40}?\bдо\b"
+        # сроки других действий рядом со словом «поставка» (новые пакеты ЕИС, 31.10.2026):
+        # заранее известить, вернуть аванс, устранить недостатки, оформить документ после
+        # поставки, просрочка как основание расторжения, «дата начала исполнения — 0 дней»
+        r"|не\s+менее\s+чем\s+за\s|возврат\w*[^.;]{0,120}?аванс"
+        r"|с\s+момента\s+обнаружени|по\s+факту\s+поставк"
+        r"|просрочк\w*[^.;]{0,120}?на\s+срок\s+более|дата\s+начала\s+исполнения"
+        r"|\bс\s+\d{1,2}[.:]\d{2}\s+до\s+\d{1,2}[.:]\d{2}"  # часы работы: «с 09.00 до 16.00»
     ),
 }
 # точка между цифрами — номер части или пункта («частями 7, 7.1 и 7.2»), а не конец предложения

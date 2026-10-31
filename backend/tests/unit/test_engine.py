@@ -662,8 +662,9 @@ def test_context_too_long_group_split() -> None:
 def test_budgets_follow_context_length() -> None:
     from svetofor.llm.prompting import Budgets
 
-    assert Budgets.for_context(8192) == Budgets(2048, 4096)
-    assert Budgets.for_context(128_000) == Budgets(6000, 12_000)
+    assert Budgets.for_context(8192) == Budgets(3072, 4096)
+    assert Budgets.for_context(32768) == Budgets(12_000, 12_000)
+    assert Budgets.for_context(128_000) == Budgets(12_000, 12_000)
 
 
 # ─── второе мнение ───

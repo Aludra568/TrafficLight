@@ -62,6 +62,14 @@ def batches(rules: Sequence[LlmCheckRule], size: int) -> list[list[LlmCheckRule]
     return [group[i : i + size] for group in groups.values() for i in range(0, len(group), size)]
 
 
+def search_request(rule: LlmCheckRule) -> SearchRequest:
+    """Запрос поиска правила: подсказки и вопрос — для вектора, подсказки — для полнотекста.
+    Его же берёт замер поиска без модели (`svetofor.eval.retrieval`)."""
+    return SearchRequest(
+        " ".join([*rule.search_hints, squash(rule.question)]), tuple(rule.search_hints)
+    )
+
+
 def _ids(chunks: Sequence[SourceChunk]) -> list[str]:
     return [c.id for c in chunks]
 
@@ -111,10 +119,7 @@ class LlmCheckEvaluator(RuleEvaluator):
         """Документы не помещаются: фрагменты поиска по запросу каждого правила группы."""
         assert self.deps.retrieve is not None
         retrieve = self.deps.retrieve
-        requests = [
-            SearchRequest(" ".join([*r.search_hints, squash(r.question)]), tuple(r.search_hints))
-            for r in rules
-        ]
+        requests = [search_request(r) for r in rules]
         chunks = retrieve(doc_types, requests)
         if not chunks:  # поиск ничего не дал — это ещё не «условия нет»
             return list(self._second_pass(rules, ctx, ()).values())
