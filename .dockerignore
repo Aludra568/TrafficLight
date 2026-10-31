@@ -16,3 +16,4 @@ backups/
 eval/
 *.md
 !frontend/**/*.md
+media/
