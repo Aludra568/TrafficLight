@@ -98,6 +98,7 @@ def render_portfolio_docx(data: PortfolioOut, base_url: str) -> bytes:
         document.add_paragraph("Повторяющиеся риски среди готовых закупок не найдены.")
     document.add_heading("Замечания по критичности", 1)
     for finding in data.findings:
+        block_start = len(document.paragraphs)
         paragraph = document.add_paragraph()
         paragraph.add_run(
             f"{LIGHTS[finding.severity]} · {finding.rule_code} · {finding.source_name}"
@@ -115,6 +116,8 @@ def render_portfolio_docx(data: PortfolioOut, base_url: str) -> bytes:
             "Открыть замечание и источник",
             f"{base_url}/checks/{finding.check_id}?{urlencode(params)}",
         )
+        for paragraph in document.paragraphs[block_start:-1]:
+            paragraph.paragraph_format.keep_with_next = True
     document.add_paragraph(DISCLAIMER)
     output = io.BytesIO()
     document.save(output)

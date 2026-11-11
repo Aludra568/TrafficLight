@@ -37,6 +37,7 @@ HEADERS = (
     "Документ и страница",
 )
 SEVERITIES = {"red": "Критично", "yellow": "Внимание"}
+LIGHT_TITLES = {**SEVERITIES, "green": "Рисков не найдено", "gray": "Не оценено"}
 FILLS = {"red": "FCE4E7", "yellow": "FFF2CC"}
 
 
@@ -168,11 +169,11 @@ def render_xlsx(
                 ("В работе", portfolio.running),
                 ("Ожидает", portfolio.waiting),
                 ("С ошибкой", portfolio.failed),
-                ("Итог", portfolio.light.value),
+                ("Итог", LIGHT_TITLES[portfolio.light]),
             )
         )
         for light, value in portfolio.distribution.items():
-            info.append((f"Закупки: {light}", value))
+            info.append((f"Закупки: {LIGHT_TITLES[light]}", value))
     for name, metric in info:
         summary.append([name, metric])
     summary.append(["Категория", "Всего", "Критично", "Внимание", "Отработано", "Неактуально"])
