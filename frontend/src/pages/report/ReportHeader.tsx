@@ -3,6 +3,7 @@ import {
   DiffOutlined,
   DownloadOutlined,
   FileTextOutlined,
+  FileExcelOutlined,
   InfoCircleOutlined,
   MailOutlined,
   ReloadOutlined,
@@ -24,6 +25,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { ApiError } from "../../api/client";
 import { useEditions, useRerun } from "../../api/hooks";
+import { downloadCheckExcel } from "../../api/portfolios";
 import type { CheckOut, ReportOut } from "../../api/types";
 import { TrafficLight } from "../../components/TrafficLight";
 import { count, duration, when } from "../../lib/format";
@@ -315,6 +317,13 @@ export function ReportHeader({
 
   const actions = (
     <Space wrap size={8}>
+      <Button
+        icon={<FileExcelOutlined />}
+        loading={busy === "xlsx"}
+        onClick={() => run("xlsx", () => downloadCheckExcel(check.id, title))}
+      >
+        Чек-лист Excel
+      </Button>
       <Dropdown
         menu={{
           items: [

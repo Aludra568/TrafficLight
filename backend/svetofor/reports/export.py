@@ -16,10 +16,12 @@ from svetofor.reports.report import build_report
 def report_paths(check: Check) -> tuple[Path, Path, Path]:
     """(DOCX, PDF, файл с причиной неудачи PDF) в папке отчётов пакета."""
     folder = PackagePaths(Path(check.package.storage_path)).reports
+    revision = int(check.counters.get("handling_revision", 0))
+    stem = f"{check.id}-h{revision}" if revision else str(check.id)
     return (
-        folder / f"{check.id}.docx",
-        folder / f"{check.id}.pdf",
-        folder / f"{check.id}.pdf.error",
+        folder / f"{stem}.docx",
+        folder / f"{stem}.pdf",
+        folder / f"{stem}.pdf.error",
     )
 
 

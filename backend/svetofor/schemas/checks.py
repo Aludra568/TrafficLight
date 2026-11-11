@@ -194,6 +194,9 @@ class FindingOut(BaseModel):
     needs_review: bool = Field(
         False, description="Второе мнение расходится — требует проверки специалистом"
     )
+    handling_status: Literal["new", "in_progress", "resolved", "not_applicable"] = "new"
+    handling_version: int = 0
+    handling_updated_at: datetime | None = None
 
 
 class RuleResultOut(BaseModel):

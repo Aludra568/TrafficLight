@@ -14,7 +14,13 @@ export type EisTask = S["EisTask"];
 export type EisStatus = S["EisStatus"];
 export type StageOut = S["StageOut"];
 export type ReportOut = S["ReportOut"];
-export type FindingOut = S["FindingOut"];
+export type Handling = "new" | "in_progress" | "resolved" | "not_applicable";
+
+export type FindingOut = S["FindingOut"] & {
+  handling_status?: Handling;
+  handling_version?: number;
+  handling_updated_at?: string | null;
+};
 export type EvidenceOut = S["EvidenceOut"];
 export type CardItem = S["CardItem"];
 export type DocumentOut = S["DocumentOut"];

@@ -77,6 +77,12 @@ class Settings(BaseSettings):
     # одновременных проверок у одного пользователя: каждая — вызовы платной модели
     # (OWASP LLM10, неограниченное потребление); проверки старше суток не считаются — зависшие
     max_active_checks_per_user: int = Field(5, ge=1)
+    max_portfolio_items: int = Field(20, ge=1, le=100)
+    max_portfolio_mb: int = Field(300, ge=1, le=1000)
+    portfolio_parallel_checks: int = Field(2, ge=1, le=5)
+    public_app_url: str = "http://localhost:8080"
+    max_pending_portfolios: int = Field(3, ge=1, le=10)
+    max_portfolio_storage_mb: int = Field(600, ge=100, le=3000)
     # загрузка закупки из ЕИС по номеру; false — без обращений к ЕИС
     eis_fetch: bool = True
     max_unpacked_mb: int = Field(1024, ge=1)

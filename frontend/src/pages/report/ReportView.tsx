@@ -1,5 +1,6 @@
 import { App, Drawer, Empty, Grid, Segmented, Select, Skeleton, Space, Tabs, Typography } from "antd";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { useFeedback, useReport } from "../../api/hooks";
 import type { CardItem, CheckOut, DocumentOut, EvidenceOut, FindingOut, Highlight } from "../../api/types";
@@ -36,6 +37,8 @@ export function ReportView({ check }: { check: CheckOut }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const cards = useRef<Map<string, HTMLElement>>(new Map());
   const jump = useRef(0);
+  const [searchParams] = useSearchParams();
+  const handledSearchRef = useRef<string | null>(null);
 
   const data = report.data;
   const filenames = useMemo(
@@ -115,6 +118,46 @@ export function ReportView({ check }: { check: CheckOut }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [findings, selected, selectFinding, tab]);
+
+  // Восстановление выбора замечания, документа и страницы из URL-параметров (deep linking)
+  useEffect(() => {
+    if (!data) return;
+    const findingParam = searchParams.get("finding");
+    if (!findingParam) return;
+    const docParam = searchParams.get("document");
+    const pageParam = searchParams.get("page");
+    const guardKey = `${findingParam}:${docParam ?? ""}:${pageParam ?? ""}`;
+
+    if (handledSearchRef.current === guardKey) return;
+    const targetFinding = data.findings.find((f) => f.id === findingParam);
+    if (!targetFinding) return;
+    // Применяем внешний адрес после появления карточек в DOM, перед следующим кадром.
+    let scrollFrame = 0;
+    const frame = window.requestAnimationFrame(() => {
+      handledSearchRef.current = guardKey;
+      setTab("risks");
+      setSeverity("all");
+      setCategory(undefined);
+      setDocumentFilter(undefined);
+      const doc = data.documents.find((d) => d.id === docParam);
+      if (doc) {
+        const parsed = Number(pageParam);
+        const page = Number.isSafeInteger(parsed) && parsed > 0 ? Math.min(parsed, doc.pages || 1) : 1;
+        const highlights = highlightsOf(targetFinding).filter((h) => h.document_id === doc.id);
+        setSelected(targetFinding.id);
+        show(doc.id, page, highlights);
+      } else {
+        selectFinding(targetFinding);
+      }
+      scrollFrame = window.requestAnimationFrame(() => {
+        cards.current.get(targetFinding.id)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      });
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.cancelAnimationFrame(scrollFrame);
+    };
+  }, [data, searchParams, show, selectFinding]);
 
   if (report.isLoading || !data) {
     return (
@@ -216,6 +259,7 @@ export function ReportView({ check }: { check: CheckOut }) {
                 else cards.current.delete(finding.id);
               }}
               finding={finding}
+              checkId={check.id}
               selected={finding.id === selected}
               expanded={finding.id === selected || (index === 0 && !findings.some((f) => f.id === selected))}
               filenames={filenames}

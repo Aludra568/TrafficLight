@@ -1,4 +1,4 @@
-import { FileSearchOutlined, HistoryOutlined, PlusOutlined, SettingOutlined } from "@ant-design/icons";
+import { FileSearchOutlined, FolderOpenOutlined, HistoryOutlined, PlusOutlined, SettingOutlined } from "@ant-design/icons";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
@@ -43,9 +43,12 @@ export function HomePage() {
   return (
     <div className="page home">
       <h1 className="visually-hidden">Главная</h1>
-      <div className={`home-tiles${methodologist ? " home-tiles-3" : ""}`}>
+      <div className={`home-tiles${methodologist ? " home-tiles-3" : ""}`} style={{ maxWidth: 1120 }}>
         <Tile to="/new" icon={<PlusOutlined />} title="Новая проверка" primary>
           Загрузить пакет документов закупки
+        </Tile>
+        <Tile to="/portfolios" icon={<FolderOpenOutlined />} title="Портфель">
+          Пакетная проверка нескольких закупок сразу
         </Tile>
         <Tile to="/checks" icon={<HistoryOutlined />} title="Мои проверки">
           {recent.isLoading ? null : total === 0 ? (

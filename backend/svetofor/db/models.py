@@ -43,6 +43,7 @@ from svetofor.db.enums import (
     FeedbackVerdict,
     FindingKind,
     FindingStatus,
+    HandlingStatus,
     Light,
     Role,
     RuleOutcome,
@@ -402,6 +403,16 @@ class Finding(IdMixin, Base):
     status: Mapped[FindingStatus] = mapped_column(
         str_enum(FindingStatus), nullable=False, default=FindingStatus.SHOWN
     )
+    handling_status: Mapped[HandlingStatus] = mapped_column(
+        str_enum(HandlingStatus), nullable=False, default=HandlingStatus.NEW, server_default="new"
+    )
+    handling_version: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
+    handling_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    handling_updated_by: Mapped[uuid.UUID | None] = fk(
+        "users.id", ondelete="SET NULL", nullable=True
+    )
 
 
 class RuleResult(IdMixin, Base):
@@ -480,3 +491,7 @@ class AuditLog(IdMixin, Base):
     entity: Mapped[str] = mapped_column(String(64), nullable=False)
     entity_id: Mapped[str | None] = mapped_column(String(64))
     payload: Mapped[dict[str, Any]] = mapped_column(nullable=False, default=dict)
+
+
+# Поздно регистрируем отдельный модуль: его модели используют уже объявленные Base и IdMixin.
+from svetofor.db import portfolio as _portfolio  # noqa: E402,F401

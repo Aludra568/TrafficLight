@@ -83,6 +83,21 @@ class FindingStatus(StrEnum):
     REJECTED_UNVERIFIED = "rejected_unverified"  # цитата модели не нашлась в документе
 
 
+class HandlingStatus(StrEnum):
+    NEW = "new"
+    IN_PROGRESS = "in_progress"
+    RESOLVED = "resolved"
+    NOT_APPLICABLE = "not_applicable"
+
+
+HANDLING_STATUS_TITLES: dict[HandlingStatus, str] = {
+    HandlingStatus.NEW: "Не обработано",
+    HandlingStatus.IN_PROGRESS: "Принято к работе",
+    HandlingStatus.RESOLVED: "Отработано",
+    HandlingStatus.NOT_APPLICABLE: "Неактуально",
+}
+
+
 class RuleOutcome(StrEnum):
     VIOLATION = "violation"
     OK = "ok"

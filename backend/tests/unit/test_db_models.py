@@ -27,6 +27,8 @@ EXPECTED_TABLES = {
     "llm_calls",
     "eval_runs",
     "audit_log",
+    "portfolios",
+    "portfolio_items",
 }
 
 

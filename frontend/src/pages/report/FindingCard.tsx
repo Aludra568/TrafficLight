@@ -8,9 +8,16 @@ import { KIND_LABELS } from "../../lib/catalog";
 import { emphasize } from "../../lib/emphasis";
 import { documentPlace, shortPlace } from "../../lib/format";
 import { brand } from "../../theme";
+import { HandlingControl } from "./HandlingControl";
 
 /** Цитата длиннее — в развёрнутой карточке показываются первые 4 строки и кнопка «целиком». */
 const LONG_QUOTE = 320;
+
+const HANDLING_LABELS: Record<string, string> = {
+  in_progress: "Принято к работе",
+  resolved: "Отработано",
+  not_applicable: "Неактуально",
+};
 
 function Quote({
   quote,
@@ -72,6 +79,7 @@ function Quote({
 
 interface Props {
   finding: FindingOut;
+  checkId?: string;
   selected: boolean;
   /** развёрнута: выбрана или первая, пока ничего не выбрано; остальные — заголовок, суть и цитата */
   expanded: boolean;
@@ -82,7 +90,7 @@ interface Props {
 }
 
 export const FindingCard = forwardRef<HTMLElement, Props>(function FindingCard(
-  { finding, selected, expanded, filenames, onSelect, onShowEvidence, onFeedback },
+  { finding, checkId, selected, expanded, filenames, onSelect, onShowEvidence, onFeedback },
   ref,
 ) {
   const contradiction = finding.kind === "contradiction" && finding.evidence.length > 1;
@@ -224,6 +232,8 @@ export const FindingCard = forwardRef<HTMLElement, Props>(function FindingCard(
             ]}
           />
 
+          <HandlingControl finding={finding} checkId={checkId} />
+
           <div
             style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4 }}
             onClick={(e) => e.stopPropagation()}
@@ -257,6 +267,11 @@ export const FindingCard = forwardRef<HTMLElement, Props>(function FindingCard(
       {!expanded && finding.needs_review && (
         <Tag bordered={false} color="warning" style={{ marginTop: 8 }}>
           требует проверки специалистом
+        </Tag>
+      )}
+      {!expanded && finding.handling_status && finding.handling_status !== "new" && (
+        <Tag bordered={false} color="blue" style={{ marginTop: 8 }}>
+          {HANDLING_LABELS[finding.handling_status] ?? finding.handling_status}
         </Tag>
       )}
     </article>

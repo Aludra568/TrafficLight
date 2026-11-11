@@ -130,7 +130,7 @@ services:
   # тяжёлые и иногда падают, отдельный процесс на задачу изолирует сбой
   worker-ingest:
     <<: *app
-    command: ["celery", "-A", "svetofor.tasks.celery_app", "worker", "-Q", "ingest,default", "--pool=prefork", "--concurrency=${INGEST_CONCURRENCY:-4}", "--loglevel=INFO"]
+    command: ["celery", "-A", "svetofor.tasks.celery_app", "worker", "-Q", "ingest,default", "--pool=prefork", "--concurrency=${INGEST_CONCURRENCY:-4}", "--loglevel=INFO", "--beat", "--schedule=/data/portfolio-beat-schedule"]
     depends_on:
       api: {condition: service_healthy}
 

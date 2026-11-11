@@ -24,6 +24,7 @@ from docx.shared import Cm, Pt, RGBColor
 from pydantic import BaseModel
 
 from svetofor.db.enums import FindingKind, Light, RuleOutcome, RuleStatus, Severity
+from svetofor.reports.handling import HANDLING_TITLES
 from svetofor.schemas.checks import FindingOut, ReportOut
 
 FONT = "Times New Roman"
@@ -201,7 +202,10 @@ def _risks(document: Any, report: ReportOut) -> None:
     widths = [2.0, 3.6, 4.6, 2.8, 3.0]
     table = _table(document, ["Цвет", "Риск", "Цитата и место", "Норма", "Что делать"], widths)
     for finding in report.findings:
-        risk = f"{finding.rule_code}. {finding.title}\n{finding.message}"
+        risk = (
+            f"{finding.rule_code}. {finding.title}\n{finding.message}\n"
+            f"Обработка: {HANDLING_TITLES[finding.handling_status]}"
+        )
         if finding.kind in KIND_WORDS:
             risk = f"{KIND_WORDS[finding.kind]}. {risk}"
         if finding.needs_review:

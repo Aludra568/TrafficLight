@@ -30,6 +30,8 @@ def create_celery(settings: Settings) -> Celery:
             "svetofor.tasks.rules",
             "svetofor.tasks.exports",
             "svetofor.tasks.eis",
+            "svetofor.tasks.portfolios",
+            "svetofor.tasks.portfolio_recovery",
         ],
     )
     app.conf.update(
@@ -45,6 +47,7 @@ def create_celery(settings: Settings) -> Celery:
             "checks.embed_chunks": {"queue": QUEUE_INGEST},
             # загрузка из ЕИС — воркер с выходом в сеть, не API
             "eis.fetch": {"queue": QUEUE_INGEST},
+            "portfolios.process": {"queue": QUEUE_INGEST},
             "checks.extract_facts": {"queue": QUEUE_LLM},
             # группы правил с моделью — параллельно в пуле потоков очереди llm, иначе
             # 8 групп шли бы друг за другом и 20 страниц не уложились бы в 2 минуты
@@ -52,6 +55,9 @@ def create_celery(settings: Settings) -> Celery:
             "rules.sandbox": {"queue": QUEUE_LLM},
         },
         result_expires=3600,
+        beat_schedule={
+            "portfolio-recovery": {"task": "portfolios.sweep", "schedule": 30.0},
+        },
         broker_connection_retry_on_startup=True,
         task_always_eager=settings.celery_eager,
         task_eager_propagates=True,

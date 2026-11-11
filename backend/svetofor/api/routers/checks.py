@@ -76,13 +76,22 @@ _ACTIVE_WINDOW = timedelta(days=1)
 def _limit_active_checks(db: DbSession, user_id: uuid.UUID) -> None:
     """Не больше N идущих проверок у пользователя — иначе один вход расходует модель без меры."""
     limit = get_settings().max_active_checks_per_user
+    from svetofor.db.portfolio import Portfolio, PortfolioItem
+
+    # Не FOR UPDATE: eager-задача ЕИС в другой сессии проверяет FK пакета на пользователя.
+    db.execute(select(User.id).where(User.id == user_id).with_for_update(key_share=True))
     since = datetime.now(UTC) - _ACTIVE_WINDOW
     active = db.scalar(
         select(func.count(Check.id))
         .join(Package, Package.id == Check.package_id)
         .where(Package.owner_id == user_id, Check.status.in_(_ACTIVE), Check.created_at > since)
     )
-    if (active or 0) >= limit:
+    reserved = db.scalar(
+        select(func.count(PortfolioItem.id)).join(Portfolio).where(
+            Portfolio.owner_id == user_id, PortfolioItem.status == "starting",
+        )
+    ) or 0
+    if (active or 0) + reserved >= limit:
         raise AppError(
             "too_many_checks",
             f"У вас уже идут проверки: {active}. Дождитесь, пока одна из них завершится",
@@ -259,6 +268,7 @@ async def create(
 
     def register() -> Check:
         with session_factory() as db:
+            _limit_active_checks(db, user.id)
             check = create_check(
                 db,
                 upload=incoming,

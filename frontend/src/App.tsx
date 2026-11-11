@@ -13,6 +13,7 @@ import { NotFoundPage } from "./pages/NotFoundPage";
 const CheckPage = lazy(() => import("./pages/CheckPage").then((m) => ({ default: m.CheckPage })));
 const ComparePage = lazy(() => import("./pages/ComparePage").then((m) => ({ default: m.ComparePage })));
 const HistoryPage = lazy(() => import("./pages/HistoryPage").then((m) => ({ default: m.HistoryPage })));
+const PortfolioPage = lazy(() => import("./pages/PortfolioPage").then((m) => ({ default: m.PortfolioPage })));
 const RulesPage = lazy(() => import("./pages/RulesPage").then((m) => ({ default: m.RulesPage })));
 
 const fallback = (
@@ -68,6 +69,8 @@ export function App() {
         <Route index element={<HomePage />} />
         <Route path="checks" element={<HistoryPage />} />
         <Route path="new" element={<NewCheckPage />} />
+        <Route path="portfolios" element={<PortfolioPage />} />
+        <Route path="portfolios/:id" element={<PortfolioPage />} />
         {/* старые адреса: список проверок — /checks, страницы «Качество» нет (метрики — в README) */}
         <Route path="history" element={<Navigate to="/checks" replace />} />
         <Route path="quality" element={<Navigate to="/" replace />} />

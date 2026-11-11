@@ -149,8 +149,8 @@ def test_migrations_apply_on_empty_database(pg_url: str) -> None:
         engine = create_engine(fresh_url)
         with engine.connect() as conn:
             head = conn.execute(text("select version_num from alembic_version")).scalar()
-            # Поведение изменилось по задаче: миграция 0007 — последняя ревизия
-            assert head == "0007"
+            # Финал: 0008 добавляет портфель и статусы, 0009 — аренду диспетчера.
+            assert head == "0009"
             light = conn.execute(
                 text("select pg_get_constraintdef(oid) from pg_constraint where conname = :n"),
                 {"n": "ck_checks_light"},

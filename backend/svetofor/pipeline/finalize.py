@@ -55,18 +55,32 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
-def start_check(session_factory: SessionFactory, check_id: uuid.UUID) -> bool:
+def start_check(
+    session_factory: SessionFactory,
+    check_id: uuid.UUID,
+    *,
+    queued_only: bool = False,
+    task_id: str | None = None,
+    redelivered: bool = False,
+) -> bool:
     """Отметить начало. False — проверку запускать не надо: удалена или уже завершена.
 
     Завершённой она бывает, если сторож закрыл её, пока задача ждала в очереди: пользователь
     видит «прервалась» и мог уже перепроверить пакет — второй конвейер по тем же документам
-    мешал бы первому. Повторная доставка задачи у идущей проверки (RUNNING) — продолжаем.
+    мешал бы первому. Для портфеля продолжать RUNNING может только повторная доставка
+    задачи с тем же task_id; отдельная повторная постановка второй конвейер не запускает.
     """
     with session_factory() as db:
         check = db.get(Check, check_id, with_for_update=True)
         if check is None or check.status not in _ACTIVE:
             return False
+        if queued_only and check.status is not CheckStatus.QUEUED:
+            same_task = task_id is not None and check.counters.get("start_task_id") == task_id
+            if not (redelivered and same_task):
+                return False
         if check.status is CheckStatus.QUEUED:
+            if task_id is not None:
+                check.counters = {**check.counters, "start_task_id": task_id}
             check.status, check.started_at = CheckStatus.RUNNING, _now()
             check.heartbeat_at = check.started_at
             db.commit()

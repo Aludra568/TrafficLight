@@ -166,11 +166,18 @@ def _run_chord(header: list[Any], body: Any) -> None:
 @celery_app.task(
     name="checks.run_check", soft_time_limit=PREPARE_TIME_LIMIT, time_limit=PREPARE_TIME_LIMIT + 60
 )
-def run_check(check_id: str) -> None:
+def run_check(check_id: str, queued_only: bool = False) -> None:
     s = services()
     cid = uuid.UUID(check_id)
     _sweep_stalled(s)
-    if not start_check(s.session_factory, cid):
+    redelivered = bool((run_check.request.delivery_info or {}).get("redelivered"))
+    if not start_check(
+        s.session_factory,
+        cid,
+        queued_only=queued_only,
+        task_id=run_check.request.id,
+        redelivered=redelivered,
+    ):
         log.info("check_not_started", check_id=check_id)
         return
     try:

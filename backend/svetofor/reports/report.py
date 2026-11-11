@@ -220,6 +220,9 @@ def _finding_out(finding: Finding, rule: Rule | None, feedback: dict[uuid.UUID, 
         feedback=feedback.get(finding.id),
         review=(finding.related or {}).get("review"),
         needs_review=bool((finding.related or {}).get("needs_review")),
+        handling_status=finding.handling_status.value,
+        handling_version=finding.handling_version,
+        handling_updated_at=finding.handling_updated_at,
     )
 
 

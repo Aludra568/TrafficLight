@@ -13,7 +13,18 @@ from prometheus_client import make_asgi_app
 import svetofor.core.metrics  # noqa: F401 — регистрирует метрики проекта в /metrics
 from svetofor import __version__
 from svetofor.api.errors import install_error_handlers
-from svetofor.api.routers import auth, checks, documents, quality, rules, system
+from svetofor.api.routers import (
+    auth,
+    checks,
+    documents,
+    handling,
+    portfolio_delete,
+    portfolios,
+    quality,
+    rules,
+    system,
+    work_exports,
+)
 from svetofor.api.security import jwt_secret
 from svetofor.core.config import get_settings
 from svetofor.core.logging import configure_logging, get_logger
@@ -58,6 +69,10 @@ def create_app() -> FastAPI:
     app.include_router(documents.router)
     app.include_router(rules.router)
     app.include_router(quality.router)
+    app.include_router(portfolios.router)
+    app.include_router(handling.router)
+    app.include_router(work_exports.router)
+    app.include_router(portfolio_delete.router)
     app.mount("/metrics", make_asgi_app())
     return app
 
