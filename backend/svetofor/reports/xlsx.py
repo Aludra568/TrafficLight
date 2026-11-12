@@ -13,7 +13,7 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
 
-from svetofor.db.enums import Severity
+from svetofor.db.enums import CheckStatus, Severity
 from svetofor.reports.docx_report import xml_safe
 from svetofor.reports.handling import HANDLING_TITLES
 from svetofor.schemas.checks import ReportOut
@@ -159,8 +159,16 @@ def render_xlsx(
         ("Замечаний", len(findings)),
         ("Отработано", sum(f.handling_status == "resolved" for f in findings)),
         ("Неактуально", sum(f.handling_status == "not_applicable" for f in findings)),
-        ("Примечание", "Статус обработки не меняет риск. Ссылки требуют входа в приложение."),
+        (
+            "Примечание",
+            "Статус обработки не меняет риск. Ссылки требуют входа в приложение. "
+            "Сохранённые замечания проверок с ошибкой включены; их анализ неполон.",
+        ),
     ]
+    if portfolio is None:
+        info.append(
+            ("Проверок с ошибкой", sum(r.check.status == CheckStatus.FAILED for r in reports))
+        )
     if portfolio is not None:
         info.extend(
             (name, value)

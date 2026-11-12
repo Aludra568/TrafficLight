@@ -13,7 +13,7 @@ from svetofor.api.deps import CurrentUser, SessionFactoryDep
 from svetofor.api.errors import AppError
 from svetofor.core.config import get_settings
 from svetofor.db.models import Check
-from svetofor.portfolios.snapshot import DONE, portfolio_for, snapshot
+from svetofor.portfolios.snapshot import TERMINAL, portfolio_for, snapshot
 from svetofor.reports.portfolio_docx import render_portfolio_docx
 from svetofor.reports.report import build_report
 from svetofor.reports.xlsx import render_xlsx
@@ -39,7 +39,7 @@ def check_xlsx(check_id: uuid.UUID, user: CurrentUser, factory: SessionFactoryDe
     with factory() as db:
         db.connection(execution_options={"isolation_level": "REPEATABLE READ"})
         check = check_for(db, check_id, user)
-        if check.status not in DONE:
+        if check.status not in TERMINAL:
             raise AppError("not_ready", "Дождитесь завершения проверки", 409)
         report = build_report(db, check, user.id)
     content = render_xlsx([report], report.package.title, get_settings().public_app_url)
@@ -56,7 +56,7 @@ def portfolio_xlsx(
         data = snapshot(db, portfolio)
         reports = []
         for item in data.items:
-            if item.status == "done" and item.check_id:
+            if item.status in {"done", "failed"} and item.check_id:
                 check = db.get(Check, item.check_id)
                 if check is not None:
                     reports.append(build_report(db, check, user.id))

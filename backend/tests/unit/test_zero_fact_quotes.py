@@ -45,3 +45,15 @@ def test_extracted_zero_uses_existing_rejection(percent, accepted):
 )
 def test_zero_absence_requires_matching_fact_type(key, quote, accepted):
     assert value_matches_quote(FACTS[key], 0.0, quote) is accepted
+
+
+@pytest.mark.parametrize(
+    "quote",
+    [
+        "Аванс составляет 30%, обеспечение заявки составляет 0%.",
+        "Аванс составляет тридцать процентов, обеспечение заявки составляет 0%.",
+        "Аванс 0%, обеспечение заявки 5%.",
+    ],
+)
+def test_zero_with_other_numbers_is_ambiguous(quote):
+    assert not value_matches_quote(FACTS["advance_percent"], 0.0, quote)

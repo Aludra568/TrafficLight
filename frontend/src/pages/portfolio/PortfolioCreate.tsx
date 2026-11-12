@@ -100,10 +100,7 @@ export function PortfolioCreate() {
               showUploadList={false}
               beforeUpload={(file, list) => {
                 if (file === list[0]) {
-                  setFiles((prev) => {
-                    const names = new Set(prev.map((f) => f.name));
-                    return [...prev, ...list.filter((f) => !names.has(f.name))];
-                  });
+                  setFiles((prev) => [...prev, ...list]);
                 }
                 return false;
               }}

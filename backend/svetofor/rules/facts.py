@@ -154,6 +154,9 @@ def value_matches_quote(spec: FactSpec, value: float | bool | str, quote: str) -
         if value == 0 and absent and re.fullmatch(absent, normalize(quote).strip(" .;:")):
             return True
         found = numbers_in(quote) or [float(n) for n in spelled_numbers(normalize(quote))]
+        # Не через наличие любого нуля: он может относиться к другому условию цитаты.
+        if value == 0 and any(n != 0 for n in [*found, *spelled_numbers(normalize(quote))]):
+            return False
         return any(abs(n - value) <= 1e-6 * max(1.0, abs(value)) for n in found)
     if spec.kind is FactKind.TEXT and isinstance(value, str):
         digits = re.sub(r"\D", "", value)

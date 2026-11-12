@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from svetofor.api.access import sees_all_packages
 from svetofor.api.errors import not_found
-from svetofor.db.enums import CheckStatus, FindingStatus
+from svetofor.db.enums import CheckStatus, FindingStatus, Light, Severity
 from svetofor.db.models import Check, Finding, User
 from svetofor.db.portfolio import Portfolio
 from svetofor.portfolios.summary import counts, overall_light, repeated_risks
@@ -19,6 +19,7 @@ from svetofor.rules.model import CATEGORY_TITLES, RuleCategory
 from svetofor.schemas.portfolios import PortfolioFinding, PortfolioItemOut, PortfolioOut
 
 DONE = {CheckStatus.DONE, CheckStatus.DONE_WITH_WARNINGS}
+TERMINAL = DONE | {CheckStatus.FAILED}
 ACTIVE = {CheckStatus.QUEUED, CheckStatus.RUNNING}
 
 
@@ -56,7 +57,7 @@ def snapshot(db: Session, portfolio: Portfolio) -> PortfolioOut:
         elif entry.status == "starting":
             state = "running"
         own = []
-        if check is not None and check.status in DONE:
+        if check is not None and check.status in TERMINAL:
             own = list(
                 db.scalars(
                     select(Finding).where(
@@ -65,6 +66,8 @@ def snapshot(db: Session, portfolio: Portfolio) -> PortfolioOut:
                     )
                 )
             )
+            if state == "failed" and any(f.severity == Severity.RED for f in own):
+                light = Light.RED
             findings.extend(
                 PortfolioFinding(
                     id=f.id,
