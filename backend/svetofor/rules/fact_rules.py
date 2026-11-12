@@ -598,6 +598,10 @@ _SENTENCE_PIECE = re.compile(r"(?:[^.;!?]|(?<=\d)\.(?=\d))+(?:[.;!?]|$)")
 # год календарной даты («не позднее 15 октября 2026 года», «в 2026 году») — не срок «N лет»
 _CALENDAR_YEAR = re.compile(r"(?:19|20)\d\d\s*год")
 _DATE = re.compile(r"\d{1,2}\.\d{1,2}\.\d{2,4}")  # «31.12.2026 года» — дата, не срок
+_DELIVERY_PAPERWORK = re.compile(
+    r"\s*(?:со?\s+дня|с\s+(?:даты|момента))\s+(?:окончания|завершения)\s+поставк"
+    r"[^.;]{0,160}?(?:формиру|подписыва|направля)[^.;]{0,100}?(?:документ|акт|еис)"
+)
 
 
 def _claimed(text: str) -> list[tuple[int, int]]:
@@ -644,6 +648,8 @@ def unparsed_terms(key: str, chunks: Sequence[SourceChunk]) -> list[UnreadableTe
             dates = [m.span() for m in _DATE.finditer(piece)]
             for value in values.finditer(piece):
                 start = sentence.start() + value.start()
+                if key == "delivery_term_days" and _DELIVERY_PAPERWORK.match(piece, value.end()):
+                    continue  # только этот срок оформления, а не все сроки в предложении
                 if any(a <= value.start() < b for a, b in dates):
                     continue
                 if any(a <= start < b for a, b in claimed) or _CALENDAR_YEAR.match(value.group(0)):

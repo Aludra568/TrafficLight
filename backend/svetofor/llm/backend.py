@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from dataclasses import dataclass, replace
 from typing import Any, Literal, Protocol
 
@@ -220,13 +221,36 @@ class OpenAIBackend:
             extra_body = dict(extra.get("extra_body") or {})
             extra_body["thinking"] = {"type": "disabled"}
             extra["extra_body"] = extra_body
-        completion = self._client.chat.completions.create(
-            model=request.model,
-            messages=[{"role": m.role, "content": m.content} for m in request.messages],  # type: ignore[misc]
-            **extra,
-        )
-        if not completion.choices:
-            raise LLMUnavailableError("Модель вернула пустой ответ")
+        return self._request(request, extra)
+
+    def _request(self, request: ChatRequest, extra: dict[str, Any]) -> ChatReply:
+        spent_in = spent_out = 0
+        for empty_attempt in range(3):
+            completion = self._client.chat.completions.create(
+                model=request.model,
+                messages=[{"role": m.role, "content": m.content} for m in request.messages],  # type: ignore[misc]
+                **extra,
+            )
+            if completion.choices:
+                break
+            if completion.usage:
+                spent_in += completion.usage.prompt_tokens
+                spent_out += completion.usage.completion_tokens
+                details = completion.usage.completion_tokens_details
+                limit = extra.get("max_completion_tokens", extra.get("max_tokens", 0))
+                if (
+                    details
+                    and details.reasoning_tokens
+                    and details.reasoning_tokens == completion.usage.completion_tokens
+                    and completion.usage.completion_tokens >= limit > 0
+                ):
+                    # Не повторяем тот же бюджет: провайдер потратил его на рассуждения.
+                    return ChatReply("", spent_in, spent_out, "length")
+            if empty_attempt == 2:
+                raise LLMUnavailableError("Модель вернула пустой ответ после повторных запросов")
+            # Не через повторы SDK: HTTP 200 без choices SDK считает успешным запросом.
+            log.warning("llm_empty_response_retry", attempt=empty_attempt + 1)
+            time.sleep(float(empty_attempt + 1))
         choice = completion.choices[0]
         if choice.finish_reason == "content_filter":
             raise LLMRequestRejectedError("Модель отказалась отвечать (фильтр содержимого)")
@@ -237,8 +261,8 @@ class OpenAIBackend:
         prompt_chars = sum(len(m.content) for m in request.messages)
         return ChatReply(
             content=content,
-            tokens_in=usage.prompt_tokens if usage else _estimate(prompt_chars),
-            tokens_out=usage.completion_tokens if usage else _estimate(len(content)),
+            tokens_in=spent_in + (usage.prompt_tokens if usage else _estimate(prompt_chars)),
+            tokens_out=spent_out + (usage.completion_tokens if usage else _estimate(len(content))),
             finish_reason=choice.finish_reason,
         )
 
