@@ -86,11 +86,17 @@ def _limit_active_checks(db: DbSession, user_id: uuid.UUID) -> None:
         .join(Package, Package.id == Check.package_id)
         .where(Package.owner_id == user_id, Check.status.in_(_ACTIVE), Check.created_at > since)
     )
-    reserved = db.scalar(
-        select(func.count(PortfolioItem.id)).join(Portfolio).where(
-            Portfolio.owner_id == user_id, PortfolioItem.status == "starting",
+    reserved = (
+        db.scalar(
+            select(func.count(PortfolioItem.id))
+            .join(Portfolio)
+            .where(
+                Portfolio.owner_id == user_id,
+                PortfolioItem.status == "starting",
+            )
         )
-    ) or 0
+        or 0
+    )
     if (active or 0) + reserved >= limit:
         raise AppError(
             "too_many_checks",
