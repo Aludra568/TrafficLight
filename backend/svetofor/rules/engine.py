@@ -17,6 +17,7 @@ from svetofor.db.enums import FindingStatus, RuleOutcome
 from svetofor.rules.facts_catalog import display_value
 from svetofor.rules.model import LlmCheckRule, Rule
 from svetofor.rules.results import (
+    BASIS_ABSENCE,
     BASIS_EVIDENCE,
     CheckContext,
     RuleOutcomeDraft,
@@ -79,6 +80,14 @@ def guard(rule: Rule, outcome: RuleOutcomeDraft, ctx: CheckContext) -> RuleOutco
         return outcome  # найденный риск остаётся риском
     documents = ctx.documents_of(rule.applies_to)
     if isinstance(rule, LlmCheckRule):
+        if (outcome.outcome is RuleOutcome.ABSENT or basis_of(outcome) == BASIS_ABSENCE) and (
+            outcome.details or {}
+        ).get("whole_text") is not True:
+            return _blocked(
+                outcome,
+                "полный просмотр текста не подтверждён — отсутствие условия не доказано",
+                "partial_search",
+            )
         steered = next((d for d in documents if d.instructions), None)
         if steered is not None:
             return _blocked(

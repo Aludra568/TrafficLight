@@ -434,16 +434,17 @@ def big_context() -> CheckContext:
     )
 
 
-def test_absent_confirmed_by_second_pass_over_keyword_fragments() -> None:
+def test_absence_is_not_confirmed_by_second_pass_over_keyword_fragments() -> None:
     """Поиск дал часть контракта, модель «не нашла» — второй проход по фрагментам с ключевыми
     словами правила; где искали — записано в замечании."""
     eng, backend, _ = engine(LIA02_NOT_FOUND, LIA02_NOT_FOUND, retrieved=BIG_CHUNKS[:1])
     outcome = eng.run([RULES["LIA-02"]], big_context())[0]
     assert len(backend.requests) == 2
     assert "9.1. За просрочку" in backend.requests[1].messages[1].content
-    assert outcome.outcome is RuleOutcome.ABSENT
-    assert outcome.findings[0].related is not None
-    scope = outcome.findings[0].related["search_scope"]
+    assert outcome.outcome is RuleOutcome.NOT_CHECKED
+    assert outcome.findings == ()
+    assert outcome.details is not None
+    scope = outcome.details["search_scope"]
     assert scope.endswith("с ключевыми словами правила") and "из 3 фрагментов" in scope
 
 
@@ -453,8 +454,8 @@ def test_ignored_absence_also_gets_second_pass() -> None:
     eng, backend, _ = engine(not_found, not_found, retrieved=BIG_CHUNKS[:1])
     outcome = eng.run([RULES["LIA-01"]], big_context())[0]
     assert len(backend.requests) == 2
-    assert outcome.outcome is RuleOutcome.OK and outcome.details is not None
-    assert outcome.details["basis"] == "absence" and outcome.details["second_pass"] is True
+    assert outcome.outcome is RuleOutcome.NOT_CHECKED and outcome.details is not None
+    assert outcome.details["whole_text"] is False and outcome.details["second_pass"] is True
 
 
 def test_second_pass_finds_what_search_missed() -> None:

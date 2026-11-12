@@ -1,7 +1,8 @@
-import { App, Drawer, Empty, Grid, Segmented, Select, Skeleton, Space, Tabs, Typography } from "antd";
+import { App, Button, Drawer, Empty, Grid, Result, Segmented, Select, Skeleton, Space, Tabs, Typography } from "antd";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
+import { ApiError } from "../../api/client";
 import { useFeedback, useReport } from "../../api/hooks";
 import type { CardItem, CheckOut, DocumentOut, EvidenceOut, FindingOut, Highlight } from "../../api/types";
 import { PdfViewer, type ViewerTarget } from "../../components/PdfViewer";
@@ -158,6 +159,19 @@ export function ReportView({ check }: { check: CheckOut }) {
       window.cancelAnimationFrame(scrollFrame);
     };
   }, [data, searchParams, show, selectFinding]);
+
+  if (report.isError && !data) {
+    return (
+      <div className="page">
+        <Result
+          status="error"
+          title="Не удалось загрузить отчёт"
+          subTitle={report.error instanceof ApiError ? report.error.message : "Проверьте соединение и повторите загрузку"}
+          extra={<Button type="primary" loading={report.isFetching} onClick={() => void report.refetch()}>Повторить загрузку</Button>}
+        />
+      </div>
+    );
+  }
 
   if (report.isLoading || !data) {
     return (

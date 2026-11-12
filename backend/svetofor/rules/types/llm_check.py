@@ -10,7 +10,7 @@
 - не помещаются — фрагменты поиска, а затем для всех правил с ответом «не найдено» —
   **второй проход** одним вызовом на группу: весь текст или все фрагменты с ключевыми словами
   правил. Пустая выдача поиска — сразу второй проход. Только после него «не найдено» становится
-  «в порядке по отсутствию» (или замечанием «условие не найдено»), с записью, где искали.
+  «в порядке по отсутствию» (или замечанием «условие не найдено»), только если прочитан весь текст.
 
 Раньше второй проход был только у правил, сообщающих об отсутствии условия, и промах поиска по
 остальным (в том числе красным) молча давал «в порядке» — модели часто ложно отвечают «такого
@@ -247,7 +247,9 @@ class LlmCheckEvaluator(RuleEvaluator):
         if not scope.chunks or set(_ids(scope.chunks)) <= set(_ids(seen)):
             # нового текста нет: модель уже видела всё, что можно показать
             return {
-                r.id: self._absent(r, ctx, scope.text).with_details(context=_ids(seen))
+                r.id: self._absent(r, ctx, scope.text, whole=scope.whole).with_details(
+                    context=_ids(seen), whole_text=scope.whole
+                )
                 for r in rules
             }
         try:
@@ -276,7 +278,9 @@ class LlmCheckEvaluator(RuleEvaluator):
         for rule in rules:
             verdict = answer.verdicts.get(rule.id)
             if verdict is not None and verdict.verdict == "not_found":
-                result[rule.id] = self._absent(rule, ctx, scope.text).with_details(**trace)
+                result[rule.id] = self._absent(
+                    rule, ctx, scope.text, whole=scope.whole
+                ).with_details(**trace)
             else:
                 result[rule.id] = self._apply(
                     rule, verdict, scope.chunks, answer.prompt_chunks, ctx
@@ -319,8 +323,8 @@ class LlmCheckEvaluator(RuleEvaluator):
                     "unverified_ok",
                 )
             return ok_with_evidence(rule.id, *([ok_match] if ok_match else []))
-        if verdict.verdict == "not_found":  # сюда — только после второго прохода
-            return self._absent(rule, ctx, None)
+        if verdict.verdict == "not_found":
+            return not_checked(rule.id, "полный просмотр текста не подтверждён")
         # нарушение: цитата обязана найтись в документе
         evidence = self._verified(rule, verdict, chunks, prompt_chunks, ctx)
         if evidence is None:
@@ -388,8 +392,14 @@ class LlmCheckEvaluator(RuleEvaluator):
     def _reports_absence(rule: LlmCheckRule) -> bool:
         return rule.absent_behavior is AbsentBehavior.REPORT and rule.absent_severity is not None
 
-    def _absent(self, rule: LlmCheckRule, ctx: CheckContext, scope: str | None) -> RuleOutcomeDraft:
+    def _absent(
+        self, rule: LlmCheckRule, ctx: CheckContext, scope: str, *, whole: bool
+    ) -> RuleOutcomeDraft:
         """Условия нет в прочитанном тексте: «в порядке по отсутствию» или замечание правила."""
+        if not whole:
+            return not_checked(
+                rule.id, "прочитана только часть текста — отсутствие условия не подтверждено"
+            ).with_details(search_scope=scope, whole_text=False)
         if not self._reports_absence(rule) or rule.absent_severity is None:
             return ok_by_absence(rule.id, **({"search_scope": scope} if scope else {}))
         related: dict[str, object] = {

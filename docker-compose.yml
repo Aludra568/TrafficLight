@@ -16,6 +16,7 @@ x-app: &app
     - path: .env
       required: false
   environment: &app-env
+    APP_HOST: ${APP_HOST:-127.0.0.1}
     DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-svetofor}:${POSTGRES_PASSWORD:-svetofor}@postgres:5432/${POSTGRES_DB:-svetofor}
     REDIS_URL: redis://redis:6379/0
     EMBED_URL: ${EMBED_URL:-http://embedder:80}
@@ -146,7 +147,7 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
     ports:
-      - "${APP_PORT:-8080}:80"
+      - "${APP_HOST:-127.0.0.1}:${APP_PORT:-8080}:80"
     depends_on:
       api: {condition: service_healthy}
     restart: unless-stopped

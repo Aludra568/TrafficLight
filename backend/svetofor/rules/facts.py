@@ -38,6 +38,19 @@ _UNITS = {
 }
 _YES = {"true", "да", "yes"}
 _NO = {"false", "нет", "no"}
+_ZERO_ABSENCE = {
+    "advance_percent": (
+        r"(?:аванс\w* не (?:предусмотрен|выплачивается)\w*|без (?:выплаты )?аванса)"
+    ),
+    "bid_security_percent": r"обеспечение заявки не (?:требуется|установлено|предусмотрено)",
+    "contract_security_percent": (
+        r"обеспечение исполнения (?:контракта|договора) не "
+        r"(?:требуется|устанавливается|установлено|предусмотрено|предусматривается)"
+    ),
+    "warranty_security_percent": (
+        r"обеспечение гарантийных обязательств не (?:требуется|установлено|предусмотрено)"
+    ),
+}
 
 
 @dataclass(frozen=True)
@@ -134,9 +147,12 @@ def value_matches_quote(spec: FactSpec, value: float | bool | str, quote: str) -
 
     Раньше цитата без цифр пропускала любое число: «в сроки по графику» → «5 дней».
     """
-    if spec.kind is FactKind.NUMBER and isinstance(value, float):
-        if value == 0:
-            return True  # «аванс не предусмотрен» — числа в цитате нет
+    if spec.kind is FactKind.NUMBER and isinstance(value, int | float):
+        if isinstance(value, bool):
+            return False
+        absent = _ZERO_ABSENCE.get(spec.key)
+        if value == 0 and absent and re.fullmatch(absent, normalize(quote).strip(" .;:")):
+            return True
         found = numbers_in(quote) or [float(n) for n in spelled_numbers(normalize(quote))]
         return any(abs(n - value) <= 1e-6 * max(1.0, abs(value)) for n in found)
     if spec.kind is FactKind.TEXT and isinstance(value, str):

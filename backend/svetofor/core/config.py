@@ -5,8 +5,9 @@ from __future__ import annotations
 from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
+from urllib.parse import urlsplit
 
-from pydantic import Field
+from pydantic import Field, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -31,6 +32,8 @@ class Settings(BaseSettings):
 
     # Веб
     app_port: int = 8080
+    app_host: str = "127.0.0.1"
+    public_app_url: str = "http://localhost:8080"
     jwt_secret: str = DEFAULT_JWT_SECRET
     jwt_ttl_minutes: int = Field(720, ge=5)
     # демо-учётки (специалист, методолог, администратор): для жюри и стенда; в пилоте — false
@@ -80,7 +83,6 @@ class Settings(BaseSettings):
     max_portfolio_items: int = Field(20, ge=1, le=100)
     max_portfolio_mb: int = Field(300, ge=1, le=1000)
     portfolio_parallel_checks: int = Field(2, ge=1, le=5)
-    public_app_url: str = "http://localhost:8080"
     max_pending_portfolios: int = Field(3, ge=1, le=10)
     max_portfolio_storage_mb: int = Field(600, ge=100, le=3000)
     # загрузка закупки из ЕИС по номеру; false — без обращений к ЕИС
@@ -114,6 +116,22 @@ class Settings(BaseSettings):
     eval_dir: Path = Path("/app/eval")  # наборы для оценки и результаты прогонов
     metrics_port: int = Field(9100, ge=0)  # эндпоинт метрик воркера Celery; 0 — не поднимать
     celery_eager: bool = False  # задачи выполняются сразу в процессе (тесты, отладка без Redis)
+
+    @field_validator("demo_users_password")
+    @classmethod
+    def validate_demo_password(cls, value: str, info: ValidationInfo) -> str:
+        if not info.data.get("demo_users") or value.strip().lower() not in ("", "demo"):
+            return value
+        local = {"localhost", "127.0.0.1", "::1"}
+        try:
+            public_host = urlsplit(info.data.get("public_app_url", "")).hostname
+        except ValueError:
+            public_host = None
+        if info.data.get("app_host") not in local or public_host not in local:
+            raise ValueError(
+                "Для доступа из сети задайте DEMO_USERS=false или свой DEMO_USERS_PASSWORD"
+            )
+        return value
 
     @property
     def llm_configured(self) -> bool:
