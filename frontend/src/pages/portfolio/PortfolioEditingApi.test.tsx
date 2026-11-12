@@ -15,10 +15,6 @@ import {
 } from "../../api/portfolioEditing";
 import { mockApi, renderApp } from "../../test/render";
 
-vi.mock("../../lib/portfolioFilename", () => ({
-  portfolioExportName: (title: string, kind: string) => `Чек-лист по «${title}».${kind}`,
-}));
-
 describe("portfolioEditing API hooks", () => {
   it("useRenamePortfolio отправляет PATCH и обрабатывает 409", async () => {
     let called = false;
@@ -135,19 +131,34 @@ describe("portfolioEditing API hooks", () => {
     expect(captured.body?.get("remove_ids")).toBe('["d-1"]');
   });
 
-  it("downloadPortfolioExcel и downloadPortfolioDocx вызывают download с именем из portfolioExportName", async () => {
-    mockApi({
-      "GET /api/portfolios/p-1/export.xlsx": () => new Response(new Blob(["x"]), {
-        status: 200,
-        headers: { "Content-Disposition": "attachment; filename=\"report.xlsx\"" },
-      }),
-      "GET /api/portfolios/p-1/export.docx": () => new Response(new Blob(["w"]), {
-        status: 200,
-        headers: { "Content-Disposition": "attachment; filename=\"report.docx\"" },
-      }),
+  it("скачивает Excel и Word с соответствующими названиями портфеля", async () => {
+    const originalUrl = globalThis.URL;
+    const names: string[] = [];
+    const createObjectURL = vi.fn(() => "blob:portfolio-export");
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal("URL", class extends originalUrl {
+      static createObjectURL = createObjectURL;
+      static revokeObjectURL = revokeObjectURL;
     });
-
-    await expect(downloadPortfolioExcel("p-1", "Закупки")).resolves.toBeUndefined();
-    await expect(downloadPortfolioDocx("p-1", "Закупки")).resolves.toBeUndefined();
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+      names.push(this.download);
+    });
+    vi.useFakeTimers();
+    mockApi({
+      "GET /api/portfolios/p-1/export.xlsx": () => new Response("x"),
+      "GET /api/portfolios/p-1/export.docx": () => new Response("w"),
+    });
+    try {
+      await downloadPortfolioExcel("p-1", "Закупки");
+      await downloadPortfolioDocx("p-1", "Закупки");
+      expect(names).toEqual(["Чек-лист по «Закупки».xlsx", "Отчёт по «Закупки».docx"]);
+      expect(createObjectURL).toHaveBeenCalledTimes(2);
+      await vi.runAllTimersAsync();
+      expect(revokeObjectURL).toHaveBeenCalledTimes(2);
+    } finally {
+      click.mockRestore();
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    }
   });
 });
