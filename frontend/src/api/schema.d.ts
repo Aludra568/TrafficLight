@@ -662,7 +662,8 @@ export interface paths {
         delete: operations["delete_portfolio_api_portfolios__portfolio_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /** Rename */
+        patch: operations["rename_api_portfolios__portfolio_id__patch"];
         trace?: never;
     };
     "/api/portfolios/{portfolio_id}/retry": {
@@ -750,10 +751,96 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/portfolios/{portfolio_id}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Append Items */
+        post: operations["append_items_api_portfolios__portfolio_id__items_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portfolios/{portfolio_id}/items/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Item */
+        delete: operations["remove_item_api_portfolios__portfolio_id__items__item_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portfolios/{portfolio_id}/items/{item_id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Documents */
+        get: operations["documents_api_portfolios__portfolio_id__items__item_id__documents_get"];
+        put?: never;
+        /** Change Documents */
+        post: operations["change_documents_api_portfolios__portfolio_id__items__item_id__documents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** Body_append_items_api_portfolios__portfolio_id__items_post */
+        Body_append_items_api_portfolios__portfolio_id__items_post: {
+            /**
+             * Request Key
+             * Format: uuid
+             */
+            request_key: string;
+            /** Files */
+            files?: string[] | null;
+            /** Numbers */
+            numbers?: string | null;
+            /**
+             * Bundle
+             * @default false
+             */
+            bundle: boolean;
+        };
+        /** Body_change_documents_api_portfolios__portfolio_id__items__item_id__documents_post */
+        Body_change_documents_api_portfolios__portfolio_id__items__item_id__documents_post: {
+            /**
+             * Request Key
+             * Format: uuid
+             */
+            request_key: string;
+            /** Version */
+            version: number;
+            /**
+             * Remove Ids
+             * @default []
+             */
+            remove_ids: string;
+            /** Files */
+            files?: string[] | null;
+        };
         /** Body_create_api_checks_post */
         Body_create_api_checks_post: {
             /**
@@ -1052,6 +1139,27 @@ export interface components {
          * @enum {string}
          */
         DocumentStatus: "pending" | "processing" | "ready" | "skipped" | "failed";
+        /** DocumentsOut */
+        DocumentsOut: {
+            /** Item Version */
+            item_version: number;
+            /** Editable */
+            editable: boolean;
+            /** Documents */
+            documents: components["schemas"]["EditDocumentOut"][];
+        };
+        /** EditDocumentOut */
+        EditDocumentOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Filename */
+            filename: string;
+            /** Status */
+            status: string;
+        };
         /**
          * EisIn
          * @description Реестровый номер закупки в ЕИС: 19 цифр (44-ФЗ) или 11 цифр (223-ФЗ).
@@ -1340,6 +1448,18 @@ export interface components {
         /** PortfolioItemOut */
         PortfolioItemOut: {
             /**
+             * Version
+             * @default 0
+             */
+            version: number;
+            /**
+             * Editing
+             * @default false
+             */
+            editing: boolean;
+            /** Edit Error */
+            edit_error?: string | null;
+            /**
              * Id
              * Format: uuid
              */
@@ -1380,6 +1500,16 @@ export interface components {
         };
         /** PortfolioOut */
         PortfolioOut: {
+            /**
+             * Title Version
+             * @default 0
+             */
+            title_version: number;
+            /**
+             * Can Edit
+             * @default false
+             */
+            can_edit: boolean;
             /**
              * Id
              * Format: uuid
@@ -1439,6 +1569,13 @@ export interface components {
             models: {
                 [key: string]: unknown;
             };
+        };
+        /** RenameIn */
+        RenameIn: {
+            /** Title */
+            title: string;
+            /** Version */
+            version: number;
         };
         /** RepeatedRisk */
         RepeatedRisk: {
@@ -3148,6 +3285,41 @@ export interface operations {
             };
         };
     };
+    rename_api_portfolios__portfolio_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                portfolio_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenameIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortfolioOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     retry_portfolio_api_portfolios__portfolio_id__retry_post: {
         parameters: {
             query?: never;
@@ -3294,6 +3466,141 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    append_items_api_portfolios__portfolio_id__items_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                portfolio_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_append_items_api_portfolios__portfolio_id__items_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortfolioCreated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_item_api_portfolios__portfolio_id__items__item_id__delete: {
+        parameters: {
+            query: {
+                version: number;
+            };
+            header?: never;
+            path: {
+                portfolio_id: string;
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    documents_api_portfolios__portfolio_id__items__item_id__documents_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                portfolio_id: string;
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_documents_api_portfolios__portfolio_id__items__item_id__documents_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                portfolio_id: string;
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_change_documents_api_portfolios__portfolio_id__items__item_id__documents_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortfolioCreated"];
                 };
             };
             /** @description Validation Error */

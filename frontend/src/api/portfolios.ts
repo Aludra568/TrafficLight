@@ -1,6 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiError, api, download } from "./client";
+import { portfolioExportName } from "../lib/portfolioFilename";
 import type { Handling, Light } from "./types";
 
 export type { Handling };
@@ -27,6 +28,9 @@ export interface PortfolioItemOut {
   progress: number;
   error: string | null;
   findings: number;
+  version?: number;
+  editing?: boolean;
+  edit_error?: string | null;
 }
 
 export interface RepeatedRisk {
@@ -65,6 +69,8 @@ export interface PortfolioOut {
   items: PortfolioItemOut[];
   repeated_risks: RepeatedRisk[];
   findings: PortfolioFinding[];
+  title_version?: number;
+  can_edit?: boolean;
 }
 
 export interface PortfolioBrief {
@@ -189,11 +195,11 @@ export function useUpdateHandling(checkId?: string) {
 }
 
 export function downloadPortfolioExcel(id: string, title: string): Promise<void> {
-  return download(`/api/portfolios/${id}/export.xlsx`, `Светофор — портфель — ${title}.xlsx`);
+  return download(`/api/portfolios/${id}/export.xlsx`, portfolioExportName(title, "xlsx"));
 }
 
 export function downloadPortfolioDocx(id: string, title: string): Promise<void> {
-  return download(`/api/portfolios/${id}/export.docx`, `Светофор — портфель — ${title}.docx`);
+  return download(`/api/portfolios/${id}/export.docx`, portfolioExportName(title, "docx"));
 }
 
 export function downloadCheckExcel(checkId: string, title: string): Promise<void> {

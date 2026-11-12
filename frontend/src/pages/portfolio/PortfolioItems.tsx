@@ -5,8 +5,12 @@ import { Link } from "react-router-dom";
 
 import type { PortfolioItemOut } from "../../api/portfolios";
 import { TrafficLight } from "../../components/TrafficLight";
+import { PortfolioEditItemActions } from "./PortfolioEditItemActions";
 
-export function PortfolioItems({ items }: { items: PortfolioItemOut[] }) {
+export function PortfolioItems({ items, portfolioId, canEdit = false, onDocuments }: {
+  items: PortfolioItemOut[]; portfolioId?: string; canEdit?: boolean;
+  onDocuments?: (item: PortfolioItemOut) => void;
+}) {
   const columns: ColumnsType<PortfolioItemOut> = [
     {
       title: "№",
@@ -26,6 +30,8 @@ export function PortfolioItems({ items }: { items: PortfolioItemOut[] }) {
           {record.error && (
             <div style={{ color: "#dc2626", fontSize: 12, marginTop: 2 }}>{record.error}</div>
           )}
+          {record.edit_error && <div role="alert">{record.edit_error}</div>}
+          {record.editing && <div className="muted">Готовится новая редакция; предыдущий отчёт сохранён</div>}
         </div>
       ),
     },
@@ -34,6 +40,7 @@ export function PortfolioItems({ items }: { items: PortfolioItemOut[] }) {
       key: "status",
       width: 140,
       render: (_, record) => {
+        if (record.editing) return <Tag color="processing">Обновляется…</Tag>;
         if (record.status === "done") {
           return <Tag color="success">Готово</Tag>;
         }
@@ -81,6 +88,11 @@ export function PortfolioItems({ items }: { items: PortfolioItemOut[] }) {
         ),
     },
   ];
+  if (canEdit && portfolioId) {
+    columns.push({ title: "Редактирование", key: "editing", width: 210,
+      render: (_, item) => <PortfolioEditItemActions portfolioId={portfolioId} item={item} onDocuments={onDocuments} />,
+    });
+  }
 
   return (
     <Table

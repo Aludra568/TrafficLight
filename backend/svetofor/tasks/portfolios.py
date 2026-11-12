@@ -48,7 +48,7 @@ def process_portfolio_item(item_id: str, attempt: int) -> None:
             item = db.get(PortfolioItem, identity)
             if not item or item.status != "starting" or item.attempts != attempt:
                 return
-            previous = db.get(Check, item.check_id) if item.check_id else None
+            previous = db.get(Check, item.check_id) if item.check_id and not item.replace_source else None
             if previous is None:
                 incoming, source_bytes = prepare_source(item, s)
             portfolio_id = item.portfolio_id
@@ -77,7 +77,7 @@ def process_portfolio_item(item_id: str, attempt: int) -> None:
                 item.status, item.error = "failed", "Владелец портфеля не найден"
                 db.commit()
                 return
-            previous = db.get(Check, item.check_id) if item.check_id else None
+            previous = db.get(Check, item.check_id) if item.check_id and not item.replace_source else None
             if item.source_type == "eis" and incoming is not None:
                 used = sum(row.source_bytes for row in portfolio.items if row.id != item.id)
                 size = source_bytes
@@ -106,6 +106,7 @@ def process_portfolio_item(item_id: str, attempt: int) -> None:
                 db.commit()
                 return
             item.check_id, item.status, item.error = check.id, "checking", None
+            item.replace_source = False
             item.started_at = datetime.now(UTC)
             check_id = check.id
             db.commit()

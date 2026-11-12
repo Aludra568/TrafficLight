@@ -150,7 +150,7 @@ def test_migrations_apply_on_empty_database(pg_url: str) -> None:
         with engine.connect() as conn:
             head = conn.execute(text("select version_num from alembic_version")).scalar()
             # Финал: 0008 добавляет портфель и статусы, 0009 — аренду диспетчера.
-            assert head == "0009"
+            assert head == "0010"  # редактирование: версии и идемпотентные операции
             light = conn.execute(
                 text("select pg_get_constraintdef(oid) from pg_constraint where conname = :n"),
                 {"n": "ck_checks_light"},

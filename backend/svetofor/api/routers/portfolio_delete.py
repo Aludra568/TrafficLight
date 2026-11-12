@@ -37,7 +37,7 @@ def delete_portfolio(portfolio_id: uuid.UUID, user: CurrentUser, db: DbSession) 
     )
     for item in items:
         check = db.get(Check, item.check_id) if item.check_id else None
-        if item.status == "starting" or (check and check.status in ACTIVE):
+        if item.edit_token or item.status == "starting" or (check and check.status in ACTIVE):
             raise AppError("busy", "Дождитесь завершения активных проверок", 409)
     sources = [Path(item.source_path).resolve() for item in items if item.source_path]
     db.delete(portfolio)

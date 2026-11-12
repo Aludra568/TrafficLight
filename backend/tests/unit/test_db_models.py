@@ -29,6 +29,7 @@ EXPECTED_TABLES = {
     "audit_log",
     "portfolios",
     "portfolio_items",
+    "portfolio_operations",
 }
 
 

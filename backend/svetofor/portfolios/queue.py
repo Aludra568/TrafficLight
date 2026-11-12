@@ -45,7 +45,13 @@ def claim_items(db: Session, portfolio_id: uuid.UUID) -> list[tuple[uuid.UUID, i
     )
     for item in entries:
         check = db.get(Check, item.check_id) if item.check_id else None
-        if check and check.status in DONE and item.source_path:
+        if (
+            check
+            and check.status in DONE
+            and item.source_path
+            and not item.replace_source
+            and not item.edit_token
+        ):
             source = Path(item.source_path).resolve()
             if source.is_relative_to((get_settings().data_dir / "portfolio_uploads").resolve()):
                 source.unlink(missing_ok=True)
@@ -92,7 +98,7 @@ def claim_items(db: Session, portfolio_id: uuid.UUID) -> list[tuple[uuid.UUID, i
     for item in entries:
         if free <= 0:
             break
-        if item.status != "waiting":
+        if item.status != "waiting" or item.edit_token:
             continue
         item.status, item.started_at, item.error = "starting", now, None
         item.attempts += 1

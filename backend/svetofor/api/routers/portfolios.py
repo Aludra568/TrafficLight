@@ -100,7 +100,12 @@ def list_portfolios(
 
 @router.get("/{portfolio_id}", response_model=PortfolioOut)
 def get_portfolio(portfolio_id: uuid.UUID, user: CurrentUser, db: DbSession) -> PortfolioOut:
-    return snapshot(db, portfolio_for(db, portfolio_id, user))
+    from svetofor.db.enums import Role
+
+    portfolio = portfolio_for(db, portfolio_id, user)
+    result = snapshot(db, portfolio)
+    result.can_edit = portfolio.owner_id == user.id or user.role == Role.ADMIN
+    return result
 
 
 @router.post("/{portfolio_id}/retry", response_model=PortfolioCreated, status_code=202)

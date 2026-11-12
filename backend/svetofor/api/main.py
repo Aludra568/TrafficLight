@@ -19,6 +19,8 @@ from svetofor.api.routers import (
     documents,
     handling,
     portfolio_delete,
+    portfolio_documents,
+    portfolio_editing,
     portfolios,
     quality,
     rules,
@@ -73,6 +75,8 @@ def create_app() -> FastAPI:
     app.include_router(handling.router)
     app.include_router(work_exports.router)
     app.include_router(portfolio_delete.router)
+    app.include_router(portfolio_editing.router)
+    app.include_router(portfolio_documents.router)
     app.mount("/metrics", make_asgi_app())
     return app
 

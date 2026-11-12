@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     CheckConstraint,
     DateTime,
     Integer,
@@ -25,6 +27,9 @@ class Portfolio(IdMixin, Base):
 
     owner_id: Mapped[uuid.UUID | None] = fk("users.id", ondelete="SET NULL", nullable=True)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
+    title_version: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
     request_key: Mapped[str] = mapped_column(String(64), nullable=False)
     request_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     dispatch_token: Mapped[str | None] = mapped_column(String(36))
@@ -69,4 +74,24 @@ class PortfolioItem(IdMixin, Base):
     error: Mapped[str | None] = mapped_column(Text)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    edit_token: Mapped[str | None] = mapped_column(String(36))
+    edit_error: Mapped[str | None] = mapped_column(Text)
+    replace_source: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     portfolio: Mapped[Portfolio] = relationship(back_populates="items")
+
+
+class PortfolioOperation(IdMixin, Base):
+    __tablename__ = "portfolio_operations"
+    __table_args__ = (
+        UniqueConstraint("portfolio_id", "request_key", name="uq_portfolio_operation"),
+    )
+
+    portfolio_id: Mapped[uuid.UUID] = fk("portfolios.id")
+    request_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    request_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    payload: Mapped[dict[str, Any]] = mapped_column(nullable=False)
+    status: Mapped[str] = mapped_column(String(16), default="queued", nullable=False)
+    error: Mapped[str | None] = mapped_column(Text)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

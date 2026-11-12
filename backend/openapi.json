@@ -2129,6 +2129,62 @@
             }
           }
         }
+      },
+      "patch": {
+        "tags": [
+          "Редактирование портфеля"
+        ],
+        "summary": "Rename",
+        "operationId": "rename_api_portfolios__portfolio_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "portfolio_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Portfolio Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/portfolios/{portfolio_id}/retry": {
@@ -2374,10 +2430,340 @@
           }
         }
       }
+    },
+    "/api/portfolios/{portfolio_id}/items": {
+      "post": {
+        "tags": [
+          "Редактирование портфеля"
+        ],
+        "summary": "Append Items",
+        "operationId": "append_items_api_portfolios__portfolio_id__items_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "portfolio_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Portfolio Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_append_items_api_portfolios__portfolio_id__items_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioCreated"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/portfolios/{portfolio_id}/items/{item_id}": {
+      "delete": {
+        "tags": [
+          "Редактирование портфеля"
+        ],
+        "summary": "Remove Item",
+        "operationId": "remove_item_api_portfolios__portfolio_id__items__item_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "portfolio_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Portfolio Id"
+            }
+          },
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "title": "Version"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/portfolios/{portfolio_id}/items/{item_id}/documents": {
+      "get": {
+        "tags": [
+          "Редактирование портфеля"
+        ],
+        "summary": "Documents",
+        "operationId": "documents_api_portfolios__portfolio_id__items__item_id__documents_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "portfolio_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Portfolio Id"
+            }
+          },
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentsOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Редактирование портфеля"
+        ],
+        "summary": "Change Documents",
+        "operationId": "change_documents_api_portfolios__portfolio_id__items__item_id__documents_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "portfolio_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Portfolio Id"
+            }
+          },
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_change_documents_api_portfolios__portfolio_id__items__item_id__documents_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioCreated"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "Body_append_items_api_portfolios__portfolio_id__items_post": {
+        "properties": {
+          "request_key": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Request Key"
+          },
+          "files": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "contentMediaType": "application/octet-stream"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Files"
+          },
+          "numbers": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 5000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Numbers"
+          },
+          "bundle": {
+            "type": "boolean",
+            "title": "Bundle",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_key"
+        ],
+        "title": "Body_append_items_api_portfolios__portfolio_id__items_post"
+      },
+      "Body_change_documents_api_portfolios__portfolio_id__items__item_id__documents_post": {
+        "properties": {
+          "request_key": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Request Key"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Version"
+          },
+          "remove_ids": {
+            "type": "string",
+            "maxLength": 20000,
+            "title": "Remove Ids",
+            "default": "[]"
+          },
+          "files": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "contentMediaType": "application/octet-stream"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Files"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_key",
+          "version"
+        ],
+        "title": "Body_change_documents_api_portfolios__portfolio_id__items__item_id__documents_post"
+      },
       "Body_create_api_checks_post": {
         "properties": {
           "file": {
@@ -3210,6 +3596,56 @@
         ],
         "title": "DocumentStatus"
       },
+      "DocumentsOut": {
+        "properties": {
+          "item_version": {
+            "type": "integer",
+            "title": "Item Version"
+          },
+          "editable": {
+            "type": "boolean",
+            "title": "Editable"
+          },
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/EditDocumentOut"
+            },
+            "type": "array",
+            "title": "Documents"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item_version",
+          "editable",
+          "documents"
+        ],
+        "title": "DocumentsOut"
+      },
+      "EditDocumentOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "filename",
+          "status"
+        ],
+        "title": "EditDocumentOut"
+      },
       "EisIn": {
         "properties": {
           "number": {
@@ -3990,6 +4426,27 @@
       },
       "PortfolioItemOut": {
         "properties": {
+          "version": {
+            "type": "integer",
+            "title": "Version",
+            "default": 0
+          },
+          "editing": {
+            "type": "boolean",
+            "title": "Editing",
+            "default": false
+          },
+          "edit_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Edit Error"
+          },
           "id": {
             "type": "string",
             "format": "uuid",
@@ -4094,6 +4551,16 @@
       },
       "PortfolioOut": {
         "properties": {
+          "title_version": {
+            "type": "integer",
+            "title": "Title Version",
+            "default": 0
+          },
+          "can_edit": {
+            "type": "boolean",
+            "title": "Can Edit",
+            "default": false
+          },
           "id": {
             "type": "string",
             "format": "uuid",
@@ -4232,6 +4699,28 @@
           "models"
         ],
         "title": "QualityOut"
+      },
+      "RenameIn": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "title",
+          "version"
+        ],
+        "title": "RenameIn"
       },
       "RepeatedRisk": {
         "properties": {

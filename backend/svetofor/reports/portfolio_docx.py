@@ -57,6 +57,8 @@ def render_portfolio_docx(data: PortfolioOut, base_url: str) -> bytes:
     for run in title.runs:
         run.font.color.rgb = RGBColor(0, 0, 0)
     document.add_paragraph(data.title)
+    if not data.items:
+        document.add_paragraph("В портфеле пока нет закупок")
     document.add_paragraph(
         f"Итог: {LIGHTS[data.light]}. "
         + (

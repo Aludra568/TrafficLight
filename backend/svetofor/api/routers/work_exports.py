@@ -14,6 +14,7 @@ from svetofor.api.errors import AppError
 from svetofor.core.config import get_settings
 from svetofor.db.models import Check
 from svetofor.portfolios.snapshot import TERMINAL, portfolio_for, snapshot
+from svetofor.reports.export_names import portfolio_export_name
 from svetofor.reports.portfolio_docx import render_portfolio_docx
 from svetofor.reports.report import build_report
 from svetofor.reports.xlsx import render_xlsx
@@ -61,7 +62,7 @@ def portfolio_xlsx(
                 if check is not None:
                     reports.append(build_report(db, check, user.id))
     content = render_xlsx(reports, data.title, get_settings().public_app_url, data)
-    return attachment(content, "Светофор — портфель.xlsx", XLSX)
+    return attachment(content, portfolio_export_name(data.title, "xlsx"), XLSX)
 
 
 @router.get("/portfolios/{portfolio_id}/export.docx", summary="Сводный отчёт портфеля в Word")
@@ -72,4 +73,4 @@ def portfolio_docx(
         db.connection(execution_options={"isolation_level": "REPEATABLE READ"})
         data = snapshot(db, portfolio_for(db, portfolio_id, user))
     content = render_portfolio_docx(data, get_settings().public_app_url)
-    return attachment(content, "Светофор — портфель.docx", DOCX)
+    return attachment(content, portfolio_export_name(data.title, "docx"), DOCX)

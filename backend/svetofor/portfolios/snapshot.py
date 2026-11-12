@@ -35,6 +35,8 @@ def snapshot(db: Session, portfolio: Portfolio) -> PortfolioOut:
     findings: list[PortfolioFinding] = []
     for entry in portfolio.items:
         check = db.get(Check, entry.check_id) if entry.check_id else None
+        if entry.replace_source or entry.edit_token:
+            check = None
         if check and check.status == CheckStatus.FAILED and entry.status in {"waiting", "starting"}:
             check = None
         state = "waiting"
@@ -50,11 +52,13 @@ def snapshot(db: Session, portfolio: Portfolio) -> PortfolioOut:
             progress = round(sum(s.progress for s in stages) / len(stages)) if stages else 0
             if state == "done":
                 progress = 100
-        elif entry.status == "checking":
+        elif entry.status == "checking" and not entry.edit_token and not entry.replace_source:
             state, error = "failed", "Пакет или проверка были удалены"
         elif entry.status == "failed":
             state = "failed"
         elif entry.status == "starting":
+            state = "running"
+        if entry.edit_token:
             state = "running"
         own = []
         if check is not None and check.status in TERMINAL:
@@ -92,6 +96,9 @@ def snapshot(db: Session, portfolio: Portfolio) -> PortfolioOut:
         items.append(
             PortfolioItemOut(
                 id=entry.id,
+                version=entry.version,
+                editing=entry.edit_token is not None,
+                edit_error=entry.edit_error,
                 position=entry.position,
                 source_type=entry.source_type,
                 source_name=entry.source_name,
@@ -108,6 +115,7 @@ def snapshot(db: Session, portfolio: Portfolio) -> PortfolioOut:
     return PortfolioOut(
         id=portfolio.id,
         title=portfolio.title,
+        title_version=portfolio.title_version,
         created_at=portfolio.created_at,
         light=overall_light(items),
         complete=not (totals["waiting"] or totals["running"]),

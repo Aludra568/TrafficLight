@@ -243,10 +243,21 @@ Excel содержит листы «Замечания» и «Сводка», ф
 | `POST /api/portfolios` | Multipart: `title`, UUID `request_key`, отдельные `files` или строка `numbers`; повтор того же ключа и данных возвращает тот же портфель |
 | `GET /api/portfolios` | История с `page` и `page_size` |
 | `GET /api/portfolios/{id}` | Прогресс и сводный отчёт |
+| `PATCH /api/portfolios/{id}` | Переименование: `title`, текущая `version`; конфликт версии — 409 |
+| `POST /api/portfolios/{id}/items` | Multipart: UUID `request_key`, `files` или `numbers`; `bundle=true` объединяет документы в одну закупку |
+| `DELETE /api/portfolios/{id}/items/{item_id}?version=…` | Убрать одну позицию; отдельная проверка и её документы остаются в истории |
+| `GET /api/portfolios/{id}/items/{item_id}/documents` | Состав документов и версия позиции для редактирования |
+| `POST /api/portfolios/{id}/items/{item_id}/documents` | Multipart: `request_key`, `version`, JSON-массив `remove_ids`, новые `files`; новая копия пакета и перепроверка |
 | `POST /api/portfolios/{id}/retry` | Повтор неуспешных закупок или отправки в очередь |
 | `DELETE /api/portfolios/{id}` | Удаление без удаления отдельных проверок; во время работы запрещено |
 | `GET /api/portfolios/{id}/export.xlsx` | Рабочий чек-лист портфеля |
 | `GET /api/portfolios/{id}/export.docx` | Сводный отчёт портфеля |
+
+Редактирование доступно владельцу и администратору. Работающие позиции менять нельзя; добавлять
+независимые закупки можно. Повтор запроса с тем же ключом и данными не создаёт дубликаты;
+другие данные с прежним ключом дают 409. Старая проверка сохраняется при изменении документов.
+Название выгрузок берётся из текущего названия портфеля: `Чек-лист по «Название».xlsx` и
+`Отчёт по «Название».docx`. Пустой портфель также можно выгрузить.
 | `GET /api/checks/{id}/export.xlsx` | Рабочий чек-лист одной закупки |
 | `PATCH /api/findings/{id}/handling` | JSON `status` и текущая `version`; конфликт версии — 409 |
 

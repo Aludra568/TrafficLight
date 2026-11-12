@@ -15,12 +15,18 @@ import { PortfolioItems } from "./PortfolioItems";
 import { PortfolioDelete } from "./PortfolioDelete";
 import { PortfolioRisksAndFindings } from "./PortfolioRisksAndFindings";
 import { PortfolioSummary } from "./PortfolioSummary";
+import { PortfolioEditTitle } from "./PortfolioEditTitle";
+import { PortfolioEditAddItems } from "./PortfolioEditAddItems";
+import { PortfolioEditDocuments } from "./PortfolioEditDocuments";
+import type { PortfolioItemOut } from "../../api/portfolios";
 
 export function PortfolioView({ id }: { id: string }) {
   const { message } = App.useApp();
   const portfolioQuery = usePortfolio(id);
   const retryMutation = useRetryPortfolio(id);
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [documentsItem, setDocumentsItem] = useState<PortfolioItemOut | null>(null);
 
   const portfolio = portfolioQuery.data;
 
@@ -89,15 +95,15 @@ export function PortfolioView({ id }: { id: string }) {
         </Link>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
           <div>
-            <h1 className="page-title" style={{ margin: 0 }}>
-              {portfolio.title}
-            </h1>
+            <PortfolioEditTitle portfolioId={id} title={portfolio.title}
+              version={portfolio.title_version} canEdit={portfolio.can_edit} />
             <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>
               Создан {when(portfolio.created_at)}
             </div>
           </div>
 
           <Space wrap>
+            {portfolio.can_edit && <Button type="primary" onClick={() => setAdding(true)}>Добавить закупки</Button>}
             <PortfolioDelete id={portfolio.id} disabled={portfolio.running > 0} />
             {canRetry && (
               <Button
@@ -135,7 +141,8 @@ export function PortfolioView({ id }: { id: string }) {
             {
               key: "items",
               label: `Закупки (${portfolio.items.length})`,
-              children: <PortfolioItems items={portfolio.items} />,
+              children: <PortfolioItems items={portfolio.items} portfolioId={id}
+                canEdit={portfolio.can_edit} onDocuments={setDocumentsItem} />,
             },
             {
               key: "findings",
@@ -150,6 +157,10 @@ export function PortfolioView({ id }: { id: string }) {
           ]}
         />
       </Card>
+      {adding && <PortfolioEditAddItems portfolioId={id} open onClose={() => setAdding(false)} />}
+      {documentsItem && <PortfolioEditDocuments key={documentsItem.id} portfolioId={id}
+        item={portfolio.items.find((item) => item.id === documentsItem.id) ?? documentsItem}
+        open onClose={() => setDocumentsItem(null)} />}
     </div>
   );
 }

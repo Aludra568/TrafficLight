@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, true
 from sqlalchemy.orm import Session
 
 from svetofor.api.errors import AppError
@@ -13,14 +13,18 @@ from svetofor.db.models import Check
 from svetofor.db.portfolio import Portfolio, PortfolioItem
 
 
-def ensure_capacity(db: Session, owner: uuid.UUID, new_bytes: int) -> None:
+def ensure_capacity(
+    db: Session, owner: uuid.UUID, new_bytes: int, exclude_portfolio: uuid.UUID | None = None
+) -> None:
     pending = (
         select(Portfolio.id)
         .join(PortfolioItem)
         .outerjoin(Check)
         .where(
             Portfolio.owner_id == owner,
+            Portfolio.id != exclude_portfolio if exclude_portfolio else true(),
             or_(
+                PortfolioItem.edit_token.is_not(None),
                 PortfolioItem.status.in_(["waiting", "starting"]),
                 Check.status.in_(["queued", "running"]),
             ),
@@ -35,7 +39,7 @@ def ensure_capacity(db: Session, owner: uuid.UUID, new_bytes: int) -> None:
             .join(Portfolio)
             .where(
                 Portfolio.owner_id == owner,
-                PortfolioItem.source_path.is_not(None),
+                or_(PortfolioItem.source_path.is_not(None), PortfolioItem.edit_token.is_not(None)),
             )
         )
         or 0

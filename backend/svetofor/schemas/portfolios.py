@@ -26,6 +26,9 @@ class HandlingOut(BaseModel):
 
 
 class PortfolioItemOut(BaseModel):
+    version: int = 0
+    editing: bool = False
+    edit_error: str | None = None
     id: uuid.UUID
     position: int
     source_type: str
@@ -60,6 +63,8 @@ class PortfolioFinding(BaseModel):
 
 
 class PortfolioOut(BaseModel):
+    title_version: int = 0
+    can_edit: bool = False
     id: uuid.UUID
     title: str
     created_at: datetime

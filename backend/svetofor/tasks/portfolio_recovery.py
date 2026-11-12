@@ -87,6 +87,9 @@ def recover_dispatch(portfolio_id: str, token: str) -> None:
 def sweep_portfolios() -> None:
     """Независимый сторож восстанавливает и окно между коммитом recovery и отправкой."""
     s = services()
+    from svetofor.tasks.portfolio_edits import recover_edits
+
+    recover_edits(s.session_factory)
     with s.session_factory() as db:
         identities = list(
             db.scalars(

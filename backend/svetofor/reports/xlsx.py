@@ -170,6 +170,8 @@ def render_xlsx(
             ("Проверок с ошибкой", sum(r.check.status == CheckStatus.FAILED for r in reports))
         )
     if portfolio is not None:
+        if not portfolio.total:
+            info.append(("Состояние", "В портфеле пока нет закупок"))
         info.extend(
             (name, value)
             for name, value in (
